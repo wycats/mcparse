@@ -34,17 +34,20 @@ fn lex_group<'a>(
                 let start_offset = cursor.offset;
                 let inner_cursor = cursor.advance(delim.open.len());
                 let (inner_trees, next_cursor) = lex_group(inner_cursor, language, Some(delim));
-                
+
                 // Check if we found the closer
                 if next_cursor.rest.starts_with(delim.close) {
                     let end_cursor = next_cursor.advance(delim.close.len());
-                    let span = SourceSpan::new(start_offset.into(), (end_cursor.offset - start_offset).into());
+                    let span = SourceSpan::new(
+                        start_offset.into(),
+                        (end_cursor.offset - start_offset).into(),
+                    );
                     let location = SourceLocation { span };
-                    
+
                     trees.push(TokenTree::Delimited(delim.clone(), inner_trees, location));
                     cursor = end_cursor;
                     // Reset previous_token as we just finished a group
-                    previous_token = None; 
+                    previous_token = None;
                     continue 'outer;
                 } else {
                     // Unclosed delimiter - treat as error or just stop?
@@ -62,17 +65,19 @@ fn lex_group<'a>(
             if let Some((mut token, next_cursor)) = atom.parse(cursor) {
                 // Apply variable rules
                 if let AtomKind::Identifier(_) = token.kind {
-                    let role = language.variable_rules().classify(previous_token.as_ref(), &token);
+                    let role = language
+                        .variable_rules()
+                        .classify(previous_token.as_ref(), &token);
                     token.kind = AtomKind::Identifier(role);
                 }
 
                 trees.push(TokenTree::Token(token.clone()));
-                
+
                 // Update previous_token only if it's not whitespace
                 if !matches!(token.kind, AtomKind::Whitespace) {
                     previous_token = Some(token);
                 }
-                
+
                 cursor = next_cursor;
                 matched_atom = true;
                 break;
@@ -81,8 +86,8 @@ fn lex_group<'a>(
 
         if !matched_atom {
             // Skip one character to avoid infinite loop
-             let char_len = cursor.rest.chars().next().unwrap().len_utf8();
-             cursor = cursor.advance(char_len);
+            let char_len = cursor.rest.chars().next().unwrap().len_utf8();
+            cursor = cursor.advance(char_len);
         }
     }
 
@@ -92,20 +97,23 @@ fn lex_group<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mock::MockLanguage;
     use crate::atom::{AtomKind, VariableRole};
+    use crate::mock::MockLanguage;
 
     #[test]
     fn test_lex_simple() {
         let lang = MockLanguage::new();
         let input = "foo bar";
         let trees = lex(input, &lang);
-        
+
         assert_eq!(trees.len(), 3); // foo, space, bar
-        
+
         if let TokenTree::Token(t) = &trees[0] {
             assert_eq!(t.text, "foo");
-            assert!(matches!(t.kind, AtomKind::Identifier(VariableRole::Reference)));
+            assert!(matches!(
+                t.kind,
+                AtomKind::Identifier(VariableRole::Reference)
+            ));
         } else {
             panic!("Expected token");
         }
@@ -116,18 +124,21 @@ mod tests {
         let lang = MockLanguage::new().with_keyword_binding("let");
         let input = "let x";
         let trees = lex(input, &lang);
-        
+
         // let, space, x
         assert_eq!(trees.len(), 3);
-        
+
         if let TokenTree::Token(t) = &trees[0] {
             assert_eq!(t.text, "let");
             assert!(matches!(t.kind, AtomKind::Keyword(_)));
         }
-        
+
         if let TokenTree::Token(t) = &trees[2] {
             assert_eq!(t.text, "x");
-            assert!(matches!(t.kind, AtomKind::Identifier(VariableRole::Binding)));
+            assert!(matches!(
+                t.kind,
+                AtomKind::Identifier(VariableRole::Binding)
+            ));
         } else {
             panic!("Expected token x");
         }
@@ -138,9 +149,9 @@ mod tests {
         let lang = MockLanguage::new();
         let input = "(foo)";
         let trees = lex(input, &lang);
-        
+
         assert_eq!(trees.len(), 1);
-        
+
         if let TokenTree::Delimited(delim, inner, _) = &trees[0] {
             assert_eq!(delim.kind, "paren");
             assert_eq!(inner.len(), 1); // foo

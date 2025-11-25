@@ -1,5 +1,5 @@
-use crate::token::{Cursor, Token};
 use crate::highlighter::Highlighter;
+use crate::token::{Cursor, Token};
 use std::fmt::Debug;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -22,7 +22,7 @@ pub enum AtomKind {
 
 pub trait Atom: Debug + Send + Sync {
     fn kind(&self) -> AtomKind;
-    
+
     // We'll need a ParseResult type. For now, let's say Result<(Token, Cursor), ()>
     fn parse<'a>(&self, input: Cursor<'a>) -> Option<(Token, Cursor<'a>)>;
 

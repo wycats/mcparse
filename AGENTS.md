@@ -20,7 +20,8 @@ A chat reflects one or more phases, but typically operates within a single phase
 The context for the phased development workflow is stored in the `docs/agent-context` directory. The key files are:
 
 - `docs/agent-context/plan-outline.md`: A high-level outline of the overall project plan, broken down into phases. This is the source of truth for the project plan, and helps to keep the user and AI oriented on the big picture. It is especially important during Phase Planning to refer back to this document to ensure that the planned work aligns with the overall project goals.
-- `docs/agent-context/changelog.md`: A log of completed phases, including summaries of the work done and any important decisions made. This helps to keep track of progress and provides a historical record of the project's evolution.
+- `docs/agent-context/changelog.md`: A log of completed phases, including summaries of the work done. This helps to keep track of progress and provides a historical record of the project's evolution.
+- `docs/agent-context/decisions.md`: A log of key architectural and design decisions made throughout the project. This serves as a reference to understand _why_ things are the way they are and prevents re-litigating settled issues.
 - `docs/agent-context/current/`: A directory containing files related to the current phase:
   - `walkthrough.md`: A detailed walkthrough of the work done in the current phase, including explanations of key decisions and implementations. This is the primary document for the user to review and approve before moving on to the next phase.
   - `task-list.md`: A list of tasks to be completed in the current phase. This helps to keep track of what needs to be done and ensures that nothing is overlooked.
@@ -38,6 +39,7 @@ When starting a phase in a new chat, you should restore the project context by f
 
 - **Context Loading**: Make sure you understand the phased development workflow as described in this document. This is crucial for interpreting the project context correctly.
 - **State Verification**: Start by reviewing `docs/agent-context` files to understand project goals. Review the `#codebase` to get additional context on the current state of the code that may not be fully captured agent context.
+  - Review `docs/agent-context/decisions.md` to understand the architectural constraints and design philosophy established so far.
   - Review `docs/agent-context/current/walkthrough.md`. It will give you a sense of the most recent completed phase.
   - Check `docs/design` for any relevant design documents or philosophy that should guide the current work.
 - **Plan Alignment**:
@@ -54,6 +56,7 @@ When starting a phase in a new chat, you should restore the project context by f
 - **Walkthrough**: After all checks pass, update the `docs/agent-context/current/walkthrough.md` file to reflect the work done since the last phase transition and surface it to the user for review. Include a summary of the most important or controversial changes made that the user has not yet reviewed. Wait for the user to review the walkthrough and approve it before proceeding. This step may involve a back-and-forth with the user to ensure they understand and approve the changes made during the phase, and may even require doing additional implementation work if the user identifies gaps or issues that need to be addressed before the phase can be considered complete.
 - **Finalize**: Once the user has approved the walkthrough:
   - Review the implementation plan in `docs/agent-context/current/implementation-plan.md`, the task list in `docs/agent-context/current/task-list.md` and the walkthrough in `docs/agent-context/current/walkthrough.md` to determine what was completed during the phase.
+  - Extract key decisions from `docs/agent-context/current/walkthrough.md` and append them to `docs/agent-context/decisions.md`.
   - Consolidate the completed work into a description and add an entry to `docs/agent-context/changelog.md` to reflect the completed work.
   - If any part of the implementation plan was not completed, document the reasons in `docs/agent-context/changelog.md` and update `docs/agent-context/future/deferred_work.md` as needed.
   - Update `docs/agent-context/plan-outline.md` to reflect any changes to the overall project plan based on the work completed in the phase.
@@ -75,12 +78,12 @@ When starting a phase in a new chat, you should restore the project context by f
 
 To avoid confusion and ensure efficient navigation, here is an overview of the codebase structure:
 
--   `src/lib.rs`: The crate root. Exports the public API.
--   `src/atom.rs`: Defines the `Atom` trait (for atomic lexing) and `AtomKind`.
--   `src/token.rs`: Defines the core data structures: `Token`, `TokenTree` (recursive structure), `Cursor`, and `TokenStream`.
--   `src/shape.rs`: Implements the **Shape Algebra**. This is the core parsing engine, defining combinators like `term`, `seq`, `choice`, `rep`, `enter`, etc.
--   `src/language.rs`: Defines the `Language` trait (configuration for a specific language) and `VariableRules` (for hygiene/binding).
--   `src/lexer.rs`: Implements the **Atomic Lexer**. This performs the first pass, converting raw text into a tree of `TokenTree`s, handling delimiters and variable classification.
--   `src/macro.rs`: Defines the `Macro` trait and the expansion interface.
--   `src/highlighter.rs`: Provides syntax highlighting support.
--   `src/mock.rs`: Contains test utilities and a mock language implementation. **Note**: This module is `#[cfg(test)]` and should only be used for testing.
+- `src/lib.rs`: The crate root. Exports the public API.
+- `src/atom.rs`: Defines the `Atom` trait (for atomic lexing) and `AtomKind`.
+- `src/token.rs`: Defines the core data structures: `Token`, `TokenTree` (recursive structure), `Cursor`, and `TokenStream`.
+- `src/shape.rs`: Implements the **Shape Algebra**. This is the core parsing engine, defining combinators like `term`, `seq`, `choice`, `rep`, `enter`, etc.
+- `src/language.rs`: Defines the `Language` trait (configuration for a specific language) and `VariableRules` (for hygiene/binding).
+- `src/lexer.rs`: Implements the **Atomic Lexer**. This performs the first pass, converting raw text into a tree of `TokenTree`s, handling delimiters and variable classification.
+- `src/macro.rs`: Defines the `Macro` trait and the expansion interface.
+- `src/highlighter.rs`: Provides syntax highlighting support.
+- `src/mock.rs`: Contains test utilities and a mock language implementation. **Note**: This module is `#[cfg(test)]` and should only be used for testing.

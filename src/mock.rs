@@ -1,8 +1,8 @@
 use crate::atom::{Atom, AtomKind, VariableRole};
-use crate::token::{Cursor, Token, SourceLocation};
-use crate::highlighter::{Highlighter, HighlightStyle};
-use crate::language::{Language, Delimiter, VariableRules, PatternVariableRules};
+use crate::highlighter::{HighlightStyle, Highlighter};
+use crate::language::{Delimiter, Language, PatternVariableRules, VariableRules};
 use crate::r#macro::Macro;
+use crate::token::{Cursor, SourceLocation, Token};
 
 #[derive(Debug)]
 pub struct WhitespaceAtom;
@@ -132,6 +132,45 @@ impl Atom for KeywordAtom {
 }
 
 #[derive(Debug)]
+pub struct SymbolAtom {
+    symbols: Vec<String>,
+}
+
+impl SymbolAtom {
+    pub fn new(symbols: &[&str]) -> Self {
+        Self {
+            symbols: symbols.iter().map(|s| s.to_string()).collect(),
+        }
+    }
+}
+
+impl Atom for SymbolAtom {
+    fn kind(&self) -> AtomKind {
+        AtomKind::Operator
+    }
+
+    fn parse<'a>(&self, input: Cursor<'a>) -> Option<(Token, Cursor<'a>)> {
+        for sym in &self.symbols {
+            if input.rest.starts_with(sym) {
+                let token = Token {
+                    kind: AtomKind::Operator,
+                    text: sym.clone(),
+                    location: SourceLocation {
+                        span: (input.offset, sym.len()).into(),
+                    },
+                };
+                return Some((token, input.advance(sym.len())));
+            }
+        }
+        None
+    }
+
+    fn highlight(&self, token: &Token, highlighter: &mut dyn Highlighter) {
+        highlighter.highlight(token, HighlightStyle::Operator);
+    }
+}
+
+#[derive(Debug)]
 pub struct MockLanguage {
     atoms: Vec<Box<dyn Atom>>,
     delimiters: Vec<Delimiter>,
@@ -147,9 +186,11 @@ impl MockLanguage {
                 Box::new(KeywordAtom::new(&["let"])),
                 Box::new(IdentifierAtom),
             ],
-            delimiters: vec![
-                Delimiter { kind: "paren", open: "(", close: ")" },
-            ],
+            delimiters: vec![Delimiter {
+                kind: "paren",
+                open: "(",
+                close: ")",
+            }],
             macros: vec![],
             variable_rules: Box::new(PatternVariableRules::new()),
         }
@@ -162,6 +203,16 @@ impl MockLanguage {
         let mut rules = PatternVariableRules::new();
         rules = rules.bind_after_keyword(keyword);
         self.variable_rules = Box::new(rules);
+        self
+    }
+
+    pub fn with_macro(mut self, mac: Box<dyn Macro>) -> Self {
+        self.macros.push(mac);
+        self
+    }
+
+    pub fn with_symbol(mut self, symbol: &str) -> Self {
+        self.atoms.insert(1, Box::new(SymbolAtom::new(&[symbol]))); // Insert before identifier
         self
     }
 }

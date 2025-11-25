@@ -20,10 +20,10 @@ Implement the core logic of McParse, including the shape algebra, macro expansio
       - `opt(a)`: `choice(a, empty())`.
       - `separated(item, sep)`: Matches items separated by a separator.
       - `joined(a)`: Matches `a` repeated with no whitespace.
-2.  **Adjacency & Whitespace**: Implement the logic to enforce adjacency constraints and handle whitespace atoms correctly within shapes.
+2.  **Adjacency & Whitespace**: [Completed] Implement the logic to enforce adjacency constraints and handle whitespace atoms correctly within shapes.
     - Ensure `TokenStream` can peek/consume whitespace correctly.
     - Update `adjacent` combinator to check for whitespace.
-3.  **Variable Binding**: Implement the `VariableRules` trait and integrate it into the atomic lexing phase to identify bindings and references.
+3.  **Variable Binding**: [Completed] Implement the `VariableRules` trait and integrate it into the atomic lexing phase to identify bindings and references.
 4.  **Macro Expansion**: Implement the main parsing loop that consumes tokens, identifies macros (respecting shadowing), and expands them.
 5.  **Error Recovery**: Implement "forgiving" parsing logic in shapes (e.g., skipping to delimiters) to handle malformed input gracefully.
 6.  **Integration Testing**:
