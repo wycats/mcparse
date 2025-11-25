@@ -8,6 +8,7 @@ pub struct SourceLocation {
 }
 
 #[derive(Debug, Clone)]
+/// A single atomic unit of code (identifier, keyword, operator, etc.).
 pub struct Token {
     pub kind: AtomKind,
     pub text: String,
@@ -15,6 +16,8 @@ pub struct Token {
 }
 
 #[derive(Debug, Clone)]
+/// The recursive structure produced by the atomic lexer.
+/// Can be a single token, a delimited group (which contains a list of TokenTrees), or a sequence group.
 pub enum TokenTree {
     Token(Token),
     Delimited(Delimiter, Vec<TokenTree>, SourceLocation),

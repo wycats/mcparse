@@ -29,6 +29,7 @@ The context for the phased development workflow is stored in the `docs/agent-con
   - `ideas.md`: A list of ideas for future work that may be considered in later phases.
   - `deferred_work.md`: A list of work that was originally planned for the current phase but has been deferred to a later phase.
 - `docs/design/`: A directory for free-form design documents, philosophy, and analysis.
+  - `index.md`: An index of all design documents.
   - `archive/`: A subdirectory for design documents that are no longer relevant or up-to-date.
 
 ### Starting a Phase
@@ -69,3 +70,17 @@ When starting a phase in a new chat, you should restore the project context by f
 
 - The user may suggest ideas during the implementation phase. Document these in `docs/agent-context/future/ideas.md` for future consideration. The user might also edit this file directly.
 - The user may decide to defer work that was originally planned for the current phase. Document these in `docs/agent-context/future/deferred_work.md` for future consideration.
+
+### Codebase Layout
+
+To avoid confusion and ensure efficient navigation, here is an overview of the codebase structure:
+
+-   `src/lib.rs`: The crate root. Exports the public API.
+-   `src/atom.rs`: Defines the `Atom` trait (for atomic lexing) and `AtomKind`.
+-   `src/token.rs`: Defines the core data structures: `Token`, `TokenTree` (recursive structure), `Cursor`, and `TokenStream`.
+-   `src/shape.rs`: Implements the **Shape Algebra**. This is the core parsing engine, defining combinators like `term`, `seq`, `choice`, `rep`, `enter`, etc.
+-   `src/language.rs`: Defines the `Language` trait (configuration for a specific language) and `VariableRules` (for hygiene/binding).
+-   `src/lexer.rs`: Implements the **Atomic Lexer**. This performs the first pass, converting raw text into a tree of `TokenTree`s, handling delimiters and variable classification.
+-   `src/macro.rs`: Defines the `Macro` trait and the expansion interface.
+-   `src/highlighter.rs`: Provides syntax highlighting support.
+-   `src/mock.rs`: Contains test utilities and a mock language implementation. **Note**: This module is `#[cfg(test)]` and should only be used for testing.

@@ -1,6 +1,8 @@
-use crate::atom::{Atom, AtomKind};
+use crate::atom::{Atom, AtomKind, VariableRole};
 use crate::token::{Cursor, Token, SourceLocation};
 use crate::highlighter::{Highlighter, HighlightStyle};
+use crate::language::{Language, Delimiter, VariableRules, PatternVariableRules};
+use crate::r#macro::Macro;
 
 #[derive(Debug)]
 pub struct WhitespaceAtom;
@@ -45,7 +47,7 @@ pub struct IdentifierAtom;
 
 impl Atom for IdentifierAtom {
     fn kind(&self) -> AtomKind {
-        AtomKind::Identifier
+        AtomKind::Identifier(VariableRole::None)
     }
 
     fn parse<'a>(&self, input: Cursor<'a>) -> Option<(Token, Cursor<'a>)> {
@@ -69,7 +71,7 @@ impl Atom for IdentifierAtom {
         if len > 0 {
             let text = input.rest[..len].to_string();
             let token = Token {
-                kind: AtomKind::Identifier,
+                kind: AtomKind::Identifier(VariableRole::None),
                 text,
                 location: SourceLocation {
                     span: (input.offset, len).into(),
@@ -83,5 +85,101 @@ impl Atom for IdentifierAtom {
 
     fn highlight(&self, token: &Token, highlighter: &mut dyn Highlighter) {
         highlighter.highlight(token, HighlightStyle::Variable);
+    }
+}
+
+#[derive(Debug)]
+pub struct KeywordAtom {
+    keywords: Vec<String>,
+}
+
+impl KeywordAtom {
+    pub fn new(keywords: &[&str]) -> Self {
+        Self {
+            keywords: keywords.iter().map(|s| s.to_string()).collect(),
+        }
+    }
+}
+
+impl Atom for KeywordAtom {
+    fn kind(&self) -> AtomKind {
+        AtomKind::Keyword(String::new())
+    }
+
+    fn parse<'a>(&self, input: Cursor<'a>) -> Option<(Token, Cursor<'a>)> {
+        for kw in &self.keywords {
+            if input.rest.starts_with(kw) {
+                // Check boundary
+                let next_char = input.rest[kw.len()..].chars().next();
+                if next_char.map_or(true, |c| !c.is_alphanumeric() && c != '_') {
+                    let token = Token {
+                        kind: AtomKind::Keyword(kw.clone()),
+                        text: kw.clone(),
+                        location: SourceLocation {
+                            span: (input.offset, kw.len()).into(),
+                        },
+                    };
+                    return Some((token, input.advance(kw.len())));
+                }
+            }
+        }
+        None
+    }
+
+    fn highlight(&self, token: &Token, highlighter: &mut dyn Highlighter) {
+        highlighter.highlight(token, HighlightStyle::Keyword);
+    }
+}
+
+#[derive(Debug)]
+pub struct MockLanguage {
+    atoms: Vec<Box<dyn Atom>>,
+    delimiters: Vec<Delimiter>,
+    macros: Vec<Box<dyn Macro>>,
+    variable_rules: Box<dyn VariableRules>,
+}
+
+impl MockLanguage {
+    pub fn new() -> Self {
+        Self {
+            atoms: vec![
+                Box::new(WhitespaceAtom),
+                Box::new(KeywordAtom::new(&["let"])),
+                Box::new(IdentifierAtom),
+            ],
+            delimiters: vec![
+                Delimiter { kind: "paren", open: "(", close: ")" },
+            ],
+            macros: vec![],
+            variable_rules: Box::new(PatternVariableRules::new()),
+        }
+    }
+
+    pub fn with_keyword_binding(mut self, keyword: &str) -> Self {
+        // This is a bit hacky because we boxed the rules.
+        // Ideally we'd build the rules first.
+        // For now, let's just replace it.
+        let mut rules = PatternVariableRules::new();
+        rules = rules.bind_after_keyword(keyword);
+        self.variable_rules = Box::new(rules);
+        self
+    }
+}
+
+impl Language for MockLanguage {
+    fn atoms(&self) -> &[Box<dyn Atom>] {
+        &self.atoms
+    }
+
+    fn delimiters(&self) -> &[Delimiter] {
+        &self.delimiters
+    }
+
+    fn macros(&self) -> &[Box<dyn Macro>] {
+        &self.macros
+    }
+
+    fn variable_rules(&self) -> &dyn VariableRules {
+        self.variable_rules.as_ref()
     }
 }

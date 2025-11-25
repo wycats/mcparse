@@ -2,10 +2,17 @@ use crate::token::{Cursor, Token};
 use crate::highlighter::Highlighter;
 use std::fmt::Debug;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum VariableRole {
+    None,
+    Binding,
+    Reference,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum AtomKind {
     Whitespace,
-    Identifier,
+    Identifier(VariableRole),
     Keyword(String),
     Literal,
     Operator,

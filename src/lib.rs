@@ -4,7 +4,9 @@ pub mod r#macro;
 pub mod shape;
 pub mod token;
 pub mod highlighter;
+#[cfg(test)]
 pub mod mock;
+pub mod lexer;
 
 pub use atom::{Atom, AtomKind};
 pub use language::Language;
