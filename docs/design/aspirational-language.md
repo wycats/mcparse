@@ -15,7 +15,7 @@ impl AtomSet for JsonAtoms {
         ctx.define_atom("Boolean", atoms::keyword("true") | atoms::keyword("false"));
         ctx.define_atom("Null", atoms::keyword("null"));
         ctx.define_atom("Comment", atoms::line_comment("//"));
-        
+
         // Delimiters for objects and arrays
         ctx.define_delimiter("Brace", "{", "}");
         ctx.define_delimiter("Bracket", "[", "]");
@@ -43,7 +43,7 @@ fn object_pair() -> impl Shape {
 }
 
 fn object_shape() -> impl Shape {
-    shapes::delimited("Brace", 
+    shapes::delimited("Brace",
         shapes::separated(object_pair(), shapes::token(","))
     )
 }
@@ -61,7 +61,7 @@ fn array_shape() -> impl Shape {
 struct ImportMacro;
 impl Macro for ImportMacro {
     fn name(&self) -> &str { "import" }
-    
+
     fn signature(&self) -> &dyn Shape {
         // Expects: import "filename" as identifier;
         &shapes::seq((
@@ -74,7 +74,7 @@ impl Macro for ImportMacro {
 
     fn expand(&self, input: TokenTree, ctx: &MacroContext) -> ExpansionResult {
         // Implementation of import logic...
-        ExpansionResult::Ok(TokenTree::empty()) 
+        ExpansionResult::Ok(TokenTree::empty())
     }
 }
 
@@ -94,7 +94,7 @@ impl Language for JsonPlus {
         // The top level is a sequence of values (or just one value)
         &json_value()
     }
-    
+
     fn variable_rules(&self) -> &dyn VariableRules {
         // Simple rules: "Identifier" atoms in specific positions are bindings
         &SimpleVariableRules::default()

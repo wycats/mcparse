@@ -1,7 +1,9 @@
-# Current Phase: Design & Prototyping
+# Current Phase: Prototyping Core Traits
 
 ## Tasks
-- [ ] Review and provide feedback on `DESIGN.md`.
-- [ ] Sketch Rust interfaces for `Atom`, `Shape`, etc.
-- [ ] Create an aspirational example language definition.
-- [ ] Update `DESIGN.md` with the agreed-upon interfaces.
+- [x] Project Setup (dependencies: `tokio`, `thiserror`, `miette`, `owo-colors`).
+- [x] Implement Core Traits (`Atom`, `Shape`, `Macro`, `Language`, `Highlighter`).
+- [x] Define Token Types (`Token`, `TokenTree`, `Cursor`, `SourceLocation`).
+- [x] Create Mock Implementations.
+- [x] Implement `ANSIHighlighter` and `Printer`.
+- [x] Create visual verification demo (highlighting + miette errors).

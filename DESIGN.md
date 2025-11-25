@@ -93,10 +93,10 @@ To handle expressions and operators without ambiguity, McParse introduces the co
 1.  **Macro Lookup**: The parser first attempts to match a macro name at the current position.
 2.  **Variable Shadowing**: If a variable binding with the same name exists in the current scope, it shadows the macro. This allows new keywords to be introduced without breaking existing code that uses them as variable names.
 3.  **Expression Fallback**: If no macro is found, the parser assumes it is parsing an **Expression**.
-4.  **Operators as Continuations**: An operator is defined as a macro that *continues* an expression.
-    *   It appears *after* a complete expression.
-    *   It consumes the operator token and then expects another expression (or specific shape) to follow.
-    *   This process repeats until an expression ends without a subsequent continuation token.
+4.  **Operators as Continuations**: An operator is defined as a macro that _continues_ an expression.
+    - It appears _after_ a complete expression.
+    - It consumes the operator token and then expects another expression (or specific shape) to follow.
+    - This process repeats until an expression ends without a subsequent continuation token.
 
 This model avoids complex precedence rules in the core parser. Instead, the parser produces a flat list of expressions and operators. The language grammar then defines a precedence hierarchy to group this list into a tree of binary expressions (e.g., `x + y * z` becomes `x + (y * z)`).
 
@@ -128,8 +128,15 @@ pub enum AtomKind {
     Keyword(String),
     Literal,
     Operator,
-    Delimiter(DelimiterKind),
-    // ... other kinds
+    // Delimiters are handled separately to form the token tree structure
+}
+
+/// Defines a pair of delimiters that create a structural boundary in the token tree.
+#[derive(Debug, Clone)]
+pub struct Delimiter {
+    pub kind: &'static str, // e.g., "Paren", "Brace"
+    pub open: &'static str,
+    pub close: &'static str,
 }
 ```
 
@@ -180,7 +187,7 @@ pub mod shapes {
 
     /// Enforces adjacency between A and B (no whitespace allowed).
     pub fn adjacent(a: impl Shape, b: impl Shape) -> impl Shape { ... }
-    
+
     /// Matches shape A separated by shape B (e.g., comma-separated list).
     pub fn separated(item: impl Shape, separator: impl Shape) -> impl Shape { ... }
 }
@@ -199,10 +206,10 @@ pub trait Macro: Debug + Send + Sync {
 
     /// Expands the macro into a new token tree based on the matched input.
     fn expand(&self, input: TokenTree, context: &MacroContext) -> ExpansionResult;
-    
+
     /// Defines if this macro acts as an operator (expression continuation).
     fn is_operator(&self) -> bool { false }
-    
+
     /// If it is an operator, what is its precedence and associativity?
     fn precedence(&self) -> Option<Precedence> { None }
 }
@@ -215,6 +222,9 @@ pub trait Macro: Debug + Send + Sync {
 pub trait Language: Debug + Send + Sync {
     /// The set of atoms defined by this language.
     fn atoms(&self) -> &[Box<dyn Atom>];
+
+    /// The set of delimiters that define the token tree structure.
+    fn delimiters(&self) -> &[Delimiter];
 
     /// The set of initial macros available in the global scope.
     fn macros(&self) -> &[Box<dyn Macro>];
@@ -229,4 +239,5 @@ pub trait Language: Debug + Send + Sync {
 - Racket Macros: The macro system in Racket provides a powerful way to define and compose language constructs, which McParse adopts for its grammar definitions.
 - Nushell: Nushell's approach to parsing and handling incomplete input has influenced McParse's forgiving parsing design.
 - Tree-sitter: The tree-based representation of source code in Tree-sitter has inspired McParse's token tree structure. McParse grammars inherently support syntax highlighting by providing detailed token information during parsing.
+- Rust Macros: Rust's macro system, particularly `macro_rules!`, demonstrates the power of pattern matching and hygiene in a statically typed language. McParse aims to bring similar capabilities to dynamic language definitions.
 - Incremental Parsing
