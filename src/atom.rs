@@ -14,7 +14,8 @@ pub enum AtomKind {
     Whitespace,
     Identifier(VariableRole),
     Keyword(String),
-    Literal,
+    String,
+    Number,
     Operator,
     // Delimiters are handled separately
     Other(String),

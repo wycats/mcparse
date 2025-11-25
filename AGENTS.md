@@ -60,7 +60,8 @@ When starting a phase in a new chat, you should restore the project context by f
   - Consolidate the completed work into a description and add an entry to `docs/agent-context/changelog.md` to reflect the completed work.
   - If any part of the implementation plan was not completed, document the reasons in `docs/agent-context/changelog.md` and update `docs/agent-context/future/deferred_work.md` as needed.
   - Update `docs/agent-context/plan-outline.md` to reflect any changes to the overall project plan based on the work completed in the phase.
-  - Once the changelog has been updated, the files in `docs/agent-context/current/` directory should be emptied out to prepare for the next phase.
+  - **Commit**: Commit the changes to the repository to preserve the history of the `docs/agent-context/current/` files.
+  - Once the changelog has been updated and the commit is made, the files in `docs/agent-context/current/` directory should be emptied out to prepare for the next phase.
 
 ### Preparation
 

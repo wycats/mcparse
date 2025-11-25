@@ -103,7 +103,7 @@ impl Matcher for Delimiter {
 // term
 /// Matches a single token or tree using the provided `Matcher`.
 /// Implicitly skips leading whitespace.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Term<M: Matcher>(pub M);
 
 impl<M: Matcher> Shape for Term<M> {
@@ -135,14 +135,14 @@ impl<M: Matcher> Shape for Term<M> {
     }
 }
 
-pub fn term<M: Matcher + 'static>(matcher: M) -> impl Shape {
+pub fn term<M: Matcher>(matcher: M) -> Term<M> {
     Term(matcher)
 }
 
 // seq
 /// Matches shape `A` followed by shape `B`.
 /// Implicitly skips whitespace between `A` and `B` (because `B`'s first term will skip it).
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Seq<A, B>(pub A, pub B);
 
 impl<A: Shape, B: Shape> Shape for Seq<A, B> {
@@ -157,13 +157,13 @@ impl<A: Shape, B: Shape> Shape for Seq<A, B> {
     }
 }
 
-pub fn seq<A: Shape + 'static, B: Shape + 'static>(a: A, b: B) -> impl Shape {
+pub fn seq<A: Shape, B: Shape>(a: A, b: B) -> Seq<A, B> {
     Seq(a, b)
 }
 
 // choice
 /// Ordered choice: tries to match `A`, if it fails, tries to match `B`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Choice<A, B>(pub A, pub B);
 
 impl<A: Shape, B: Shape> Shape for Choice<A, B> {
@@ -179,13 +179,13 @@ impl<A: Shape, B: Shape> Shape for Choice<A, B> {
     }
 }
 
-pub fn choice<A: Shape + 'static, B: Shape + 'static>(a: A, b: B) -> impl Shape {
+pub fn choice<A: Shape, B: Shape>(a: A, b: B) -> Choice<A, B> {
     Choice(a, b)
 }
 
 // rep
 /// Matches shape `A` zero or more times.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Rep<A>(pub A);
 
 impl<A: Shape> Shape for Rep<A> {
@@ -212,14 +212,14 @@ impl<A: Shape> Shape for Rep<A> {
     }
 }
 
-pub fn rep<A: Shape + 'static>(a: A) -> impl Shape {
+pub fn rep<A: Shape>(a: A) -> Rep<A> {
     Rep(a)
 }
 
 // enter
 /// Matches a delimited group (e.g., `(...)`) and then matches the `inner` shape against the content of that group.
 /// Implicitly skips leading whitespace before the group.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Enter<S>(pub Delimiter, pub S);
 
 impl<S: Shape> Shape for Enter<S> {
@@ -270,14 +270,14 @@ impl<S: Shape> Shape for Enter<S> {
     }
 }
 
-pub fn enter<S: Shape + 'static>(delimiter: Delimiter, inner: S) -> impl Shape {
+pub fn enter<S: Shape>(delimiter: Delimiter, inner: S) -> Enter<S> {
     Enter(delimiter, inner)
 }
 
 // adjacent
 /// Matches shape `A` followed by shape `B` with **no** intervening whitespace.
 /// Used for tight binding (e.g., `obj.prop`).
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Adjacent<A, B>(pub A, pub B);
 
 impl<A: Shape, B: Shape> Shape for Adjacent<A, B> {
@@ -300,12 +300,12 @@ impl<A: Shape, B: Shape> Shape for Adjacent<A, B> {
     }
 }
 
-pub fn adjacent<A: Shape + 'static, B: Shape + 'static>(a: A, b: B) -> impl Shape {
+pub fn adjacent<A: Shape, B: Shape>(a: A, b: B) -> Adjacent<A, B> {
     Adjacent(a, b)
 }
 
 // empty
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Empty;
 
 impl Shape for Empty {
@@ -318,12 +318,12 @@ impl Shape for Empty {
     }
 }
 
-pub fn empty() -> impl Shape {
+pub fn empty() -> Empty {
     Empty
 }
 
 // end
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct End;
 
 impl Shape for End {
@@ -346,12 +346,12 @@ impl Shape for End {
     }
 }
 
-pub fn end() -> impl Shape {
+pub fn end() -> End {
     End
 }
 
 // expr
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Expr(pub Precedence);
 
 impl Shape for Expr {
@@ -364,25 +364,22 @@ impl Shape for Expr {
     }
 }
 
-pub fn expr(precedence: Precedence) -> impl Shape {
+pub fn expr(precedence: Precedence) -> Expr {
     Expr(precedence)
 }
 
 // Derived
 
-pub fn opt<A: Shape + 'static>(a: A) -> impl Shape {
+pub fn opt<A: Shape + Clone>(a: A) -> Choice<A, Empty> {
     choice(a, empty())
 }
 
-pub fn separated<A: Shape + 'static + Clone, S: Shape + 'static + Clone>(
-    item: A,
-    sep: S,
-) -> impl Shape {
+pub fn separated<A: Shape + Clone, S: Shape + Clone>(item: A, sep: S) -> Seq<A, Rep<Seq<S, A>>> {
     // seq(item, rep(seq(sep, item)))
     seq(item.clone(), rep(seq(sep, item)))
 }
 
-pub fn joined<A: Shape + 'static + Clone>(a: A) -> impl Shape {
+pub fn joined<A: Shape + Clone>(a: A) -> Seq<A, Rep<Adjacent<Empty, A>>> {
     // seq(a, rep(adjacent(empty(), a)))
     seq(a.clone(), rep(adjacent(empty(), a)))
 }
@@ -390,7 +387,7 @@ pub fn joined<A: Shape + 'static + Clone>(a: A) -> impl Shape {
 // recover
 /// Tries to match `S`. If it fails, skips tokens until `M` matches (or EOF),
 /// and returns a `TokenTree::Error`.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Recover<S, M>(pub S, pub M);
 
 impl<S: Shape, M: Matcher> Shape for Recover<S, M> {
@@ -432,6 +429,6 @@ impl<S: Shape, M: Matcher> Shape for Recover<S, M> {
     }
 }
 
-pub fn recover<S: Shape + 'static, M: Matcher + 'static>(shape: S, terminator: M) -> impl Shape {
+pub fn recover<S: Shape, M: Matcher>(shape: S, terminator: M) -> Recover<S, M> {
     Recover(shape, terminator)
 }
