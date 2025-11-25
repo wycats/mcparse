@@ -24,9 +24,9 @@
 - [x] Implement advanced Syntax Highlighting (semantic tokens).
 - [x] Create interactive demos (TUI/REPL):
   - Real-time syntax highlighting.
-  - Interactive tab completion (Deferred).
+  - Interactive tab completion.
 - [x] Design Incremental Parsing strategy.
-- [ ] Implement Incremental Parsing and re-lexing (Moved to Phase 5).
+- [x] Implement Incremental Parsing and re-lexing (Moved to Phase 5).
 
 ## Phase 4: Documentation & Guides
 
@@ -38,9 +38,14 @@
   - Advanced Topics: Macros, Hygiene, Error Recovery.
 - [ ] Generate API documentation (`cargo doc`).
 
-## Phase 5: Advanced Features & Ecosystem
+## Phase 5: Incremental Parsing Implementation
 
-- [ ] Implement Incremental Parsing (Red/Green Trees).
+- [ ] Implement Red/Green Tree data structures.
+- [ ] Implement Tree-Based Invalidation logic.
+- [ ] Implement Conservative Re-lexing.
+
+## Phase 6: Advanced Features & Ecosystem
+
 - [ ] Declarative Macro Syntax.
 - [ ] Gradual Typing Syntax exploration.
 - [ ] Wasm bindings and TypeScript integration.
