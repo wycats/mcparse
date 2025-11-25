@@ -17,19 +17,30 @@
 - [x] Implement Error Recovery strategies in Shapes.
 - [x] Add integration tests for core parsing logic.
 
-## Phase 3: Tooling & Incrementalism
+## Phase 3: Tooling & Incrementalism (Completed)
 
-- [ ] Implement a pretty printer for `TokenTree` (better `Debug` format).
-- [ ] Add `macro_rules!` macros to reduce boilerplate in Shape/Atom definitions.
-- [ ] Implement advanced Syntax Highlighting (semantic tokens).
-- [ ] Implement Tab Completion infrastructure.
-- [ ] Create interactive demos (TUI/REPL):
+- [x] Implement a pretty printer for `TokenTree` (better `Debug` format).
+- [x] Add `macro_rules!` macros to reduce boilerplate in Shape/Atom definitions.
+- [x] Implement advanced Syntax Highlighting (semantic tokens).
+- [x] Create interactive demos (TUI/REPL):
   - Real-time syntax highlighting.
-  - Interactive tab completion.
-- [ ] Implement Incremental Parsing and re-lexing.
+  - Interactive tab completion (Deferred).
+- [x] Design Incremental Parsing strategy.
+- [ ] Implement Incremental Parsing and re-lexing (Moved to Phase 5).
 
-## Phase 4: Advanced Features & Ecosystem
+## Phase 4: Documentation & Guides
 
+- [ ] Set up `mdbook` for the project.
+- [ ] Write "The McParse Book":
+  - Introduction & Philosophy.
+  - Tutorial: Building a JSON Parser.
+  - Tutorial: Building a Scripting Language.
+  - Advanced Topics: Macros, Hygiene, Error Recovery.
+- [ ] Generate API documentation (`cargo doc`).
+
+## Phase 5: Advanced Features & Ecosystem
+
+- [ ] Implement Incremental Parsing (Red/Green Trees).
 - [ ] Declarative Macro Syntax.
 - [ ] Gradual Typing Syntax exploration.
 - [ ] Wasm bindings and TypeScript integration.

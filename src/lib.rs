@@ -3,6 +3,7 @@ pub mod highlighter;
 pub mod language;
 pub mod lexer;
 pub mod r#macro;
+mod macros;
 #[cfg(test)]
 pub mod mock;
 pub mod parser;
@@ -19,3 +20,8 @@ pub use shape::{
     opt, recover, rep, separated, seq, term,
 };
 pub use token::{Cursor, SourceLocation, Token, TokenTree};
+
+#[cfg(test)]
+mod shape_tests;
+#[cfg(test)]
+mod token_tests;

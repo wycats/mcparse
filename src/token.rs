@@ -7,6 +7,14 @@ pub struct SourceLocation {
     pub span: SourceSpan,
 }
 
+impl SourceLocation {
+    pub fn contains(&self, offset: usize) -> bool {
+        let start = self.span.offset();
+        let end = start + self.span.len();
+        offset >= start && offset <= end
+    }
+}
+
 #[derive(Debug, Clone)]
 /// A single atomic unit of code (identifier, keyword, operator, etc.).
 pub struct Token {
@@ -29,6 +37,22 @@ pub enum TokenTree {
 impl TokenTree {
     pub fn empty() -> Self {
         TokenTree::Empty
+    }
+
+    pub fn to_sexp(&self) -> String {
+        match self {
+            TokenTree::Token(t) => format!("{:?}", t.text),
+            TokenTree::Delimited(d, children, _) => {
+                let inner: Vec<String> = children.iter().map(|c| c.to_sexp()).collect();
+                format!("({} {})", d.kind, inner.join(" "))
+            }
+            TokenTree::Group(children) => {
+                let inner: Vec<String> = children.iter().map(|c| c.to_sexp()).collect();
+                format!("(group {})", inner.join(" "))
+            }
+            TokenTree::Error(msg) => format!("(error {:?})", msg),
+            TokenTree::Empty => "(empty)".to_string(),
+        }
     }
 }
 
@@ -67,11 +91,11 @@ impl<'a> TokenStream<'a> {
     pub fn is_empty(&self) -> bool {
         self.trees.is_empty()
     }
-    
+
     pub fn first(&self) -> Option<&TokenTree> {
         self.trees.first()
     }
-    
+
     pub fn advance(&self, n: usize) -> Self {
         Self {
             trees: &self.trees[n..],

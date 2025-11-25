@@ -1,7 +1,39 @@
 use crate::atom::AtomKind;
 use crate::language::Delimiter;
-use crate::token::{SourceLocation, TokenStream, TokenTree};
+use crate::token::{Token, TokenStream, TokenTree};
+use miette::SourceSpan;
 use std::fmt::Debug;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ParseError {
+    pub span: SourceSpan,
+    pub message: String,
+}
+
+impl ParseError {
+    pub fn new(span: SourceSpan, message: String) -> Self {
+        Self { span, message }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CompletionKind {
+    Keyword,
+    Variable,
+    Function,
+    Field,
+    Operator,
+    Type,
+    Other,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CompletionItem {
+    pub label: String,
+    pub kind: CompletionKind,
+    pub detail: Option<String>,
+    pub delete_backwards: usize,
+}
 
 #[derive(Debug, Clone, Copy)]
 pub enum AdjacencyConstraint {
@@ -20,10 +52,7 @@ pub enum Associativity {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Precedence(pub u32);
 
-pub type MatchResult<'a> = Result<(TokenTree, TokenStream<'a>), ()>;
-
-// Placeholder for CompletionFuture
-pub type CompletionFuture<'a> = ();
+pub type MatchResult<'a> = Result<(TokenTree, TokenStream<'a>), ParseError>;
 
 pub trait MatchContext {
     fn parse_expression<'a>(
@@ -37,10 +66,19 @@ pub struct NoOpMatchContext;
 impl MatchContext for NoOpMatchContext {
     fn parse_expression<'a>(
         &mut self,
-        _stream: TokenStream<'a>,
+        stream: TokenStream<'a>,
         _precedence: Precedence,
     ) -> MatchResult<'a> {
-        Err(())
+        // Default implementation fails
+        let span = if let Some(TokenTree::Token(t)) = stream.first() {
+            t.location.span
+        } else {
+            (0, 0).into()
+        };
+        Err(ParseError::new(
+            span,
+            "Expression parsing not supported".into(),
+        ))
     }
 }
 
@@ -58,9 +96,10 @@ pub trait Shape: Debug + Send + Sync {
     fn complete<'a>(
         &self,
         _stream: TokenStream<'a>,
-        _cursor: SourceLocation,
-    ) -> CompletionFuture<'a> {
-        ()
+        _context: &mut dyn MatchContext,
+        _cursor: usize,
+    ) -> Vec<CompletionItem> {
+        vec![]
     }
 }
 
@@ -69,6 +108,13 @@ pub trait Shape: Debug + Send + Sync {
 /// Implementations exist for `AtomKind` (match by kind), `&str` (match by text), and `Delimiter` (match by delimiter type).
 pub trait Matcher: Debug + Send + Sync {
     fn matches(&self, tree: &TokenTree) -> bool;
+    fn describe(&self) -> String;
+    fn suggest(&self, _current_token: &Token) -> Vec<CompletionItem> {
+        vec![]
+    }
+    fn suggest_insertion(&self) -> Vec<CompletionItem> {
+        vec![]
+    }
 }
 
 impl Matcher for AtomKind {
@@ -78,6 +124,12 @@ impl Matcher for AtomKind {
             _ => false,
         }
     }
+    fn describe(&self) -> String {
+        format!("{:?}", self)
+    }
+    // AtomKind doesn't know specific values, so it can't suggest much without context.
+    // But we could suggest "an identifier" or "a number" as a placeholder?
+    // For now, empty.
 }
 
 impl Matcher for &str {
@@ -87,6 +139,32 @@ impl Matcher for &str {
             _ => false,
         }
     }
+
+    fn describe(&self) -> String {
+        format!("'{}'", self)
+    }
+
+    fn suggest(&self, current_token: &Token) -> Vec<CompletionItem> {
+        if self.starts_with(&current_token.text) {
+            vec![CompletionItem {
+                label: self.to_string(),
+                kind: CompletionKind::Keyword,
+                detail: None,
+                delete_backwards: current_token.text.len(),
+            }]
+        } else {
+            vec![]
+        }
+    }
+
+    fn suggest_insertion(&self) -> Vec<CompletionItem> {
+        vec![CompletionItem {
+            label: self.to_string(),
+            kind: CompletionKind::Keyword,
+            detail: None,
+            delete_backwards: 0,
+        }]
+    }
 }
 
 impl Matcher for Delimiter {
@@ -95,6 +173,10 @@ impl Matcher for Delimiter {
             TokenTree::Delimited(d, _, _) => d.kind == self.kind,
             _ => false,
         }
+    }
+
+    fn describe(&self) -> String {
+        format!("Delimiter '{}'", self.kind)
     }
 }
 
@@ -129,9 +211,71 @@ impl<M: Matcher> Shape for Term<M> {
             if self.0.matches(tree) {
                 return Ok((tree.clone(), current_stream.advance(1)));
             }
+
+            let (span, found) = match tree {
+                TokenTree::Token(t) => (t.location.span, format!("{:?}", t.kind)),
+                TokenTree::Delimited(d, _, loc) => (loc.span, format!("Delimiter {}", d.kind)),
+                TokenTree::Group(_) => ((0, 0).into(), "Group".to_string()),
+                TokenTree::Error(_) => ((0, 0).into(), "Error".to_string()),
+                TokenTree::Empty => ((0, 0).into(), "Empty".to_string()),
+            };
+
+            return Err(ParseError::new(
+                span,
+                format!("Expected {}, found {}", self.0.describe(), found),
+            ));
         }
 
-        Err(())
+        Err(ParseError::new(
+            (0, 0).into(),
+            format!("Expected {}, found EOF", self.0.describe()),
+        ))
+    }
+
+    fn complete<'a>(
+        &self,
+        stream: TokenStream<'a>,
+        _context: &mut dyn MatchContext,
+        cursor: usize,
+    ) -> Vec<CompletionItem> {
+        let mut current_stream = stream;
+
+        // Skip whitespace
+        while let Some(tree) = current_stream.first() {
+            if let TokenTree::Token(token) = tree {
+                if token.kind == AtomKind::Whitespace {
+                    if token.location.contains(cursor) {
+                        return self.0.suggest_insertion();
+                    }
+                    current_stream = current_stream.advance(1);
+                    continue;
+                }
+            }
+            break;
+        }
+
+        if let Some(tree) = current_stream.first() {
+            match tree {
+                TokenTree::Token(token) => {
+                    if token.location.contains(cursor) {
+                        return self.0.suggest(token);
+                    }
+                    if token.location.span.offset() >= cursor {
+                        return self.0.suggest_insertion();
+                    }
+                }
+                TokenTree::Delimited(_, _, loc) => {
+                    if loc.span.offset() >= cursor {
+                        return self.0.suggest_insertion();
+                    }
+                }
+                _ => {}
+            }
+        } else {
+            return self.0.suggest_insertion();
+        }
+
+        vec![]
     }
 }
 
@@ -155,6 +299,36 @@ impl<A: Shape, B: Shape> Shape for Seq<A, B> {
         let (res_b, stream_after_b) = self.1.match_shape(stream_after_a, context)?;
         Ok((TokenTree::Group(vec![res_a, res_b]), stream_after_b))
     }
+
+    fn complete<'a>(
+        &self,
+        stream: TokenStream<'a>,
+        context: &mut dyn MatchContext,
+        cursor: usize,
+    ) -> Vec<CompletionItem> {
+        // Try to match A
+        match self.0.match_shape(stream.clone(), context) {
+            Ok((_, stream_after_a)) => {
+                // If A matched, check if cursor is inside A's consumed range?
+                // Actually, match_shape doesn't return the range easily.
+                // But if A matched, we can try to complete B.
+                // However, we also need to check if we are *still* inside A.
+
+                // Heuristic: If A produces completions, return them.
+                // If not, try B.
+                let completions_a = self.0.complete(stream, context, cursor);
+                if !completions_a.is_empty() {
+                    return completions_a;
+                }
+
+                self.1.complete(stream_after_a, context, cursor)
+            }
+            Err(_) => {
+                // A failed, so we are likely in A
+                self.0.complete(stream, context, cursor)
+            }
+        }
+    }
 }
 
 pub fn seq<A: Shape, B: Shape>(a: A, b: B) -> Seq<A, B> {
@@ -176,6 +350,17 @@ impl<A: Shape, B: Shape> Shape for Choice<A, B> {
             Ok(res) => Ok(res),
             Err(_) => self.1.match_shape(stream, context),
         }
+    }
+
+    fn complete<'a>(
+        &self,
+        stream: TokenStream<'a>,
+        context: &mut dyn MatchContext,
+        cursor: usize,
+    ) -> Vec<CompletionItem> {
+        let mut items = self.0.complete(stream.clone(), context, cursor);
+        items.extend(self.1.complete(stream, context, cursor));
+        items
     }
 }
 
@@ -210,6 +395,35 @@ impl<A: Shape> Shape for Rep<A> {
 
         Ok((TokenTree::Group(results), current_stream))
     }
+
+    fn complete<'a>(
+        &self,
+        stream: TokenStream<'a>,
+        context: &mut dyn MatchContext,
+        cursor: usize,
+    ) -> Vec<CompletionItem> {
+        let mut current_stream = stream;
+
+        loop {
+            // Check if we can complete in the current position
+            let items = self.0.complete(current_stream.clone(), context, cursor);
+            if !items.is_empty() {
+                return items;
+            }
+
+            // If not, try to advance
+            match self.0.match_shape(current_stream.clone(), context) {
+                Ok((_, next_stream)) => {
+                    if next_stream.trees.len() == current_stream.trees.len() {
+                        break;
+                    }
+                    current_stream = next_stream;
+                }
+                Err(_) => break,
+            }
+        }
+        vec![]
+    }
 }
 
 pub fn rep<A: Shape>(a: A) -> Rep<A> {
@@ -241,7 +455,7 @@ impl<S: Shape> Shape for Enter<S> {
             break;
         }
 
-        if let Some(TokenTree::Delimited(d, content, _)) = current_stream.first() {
+        if let Some(TokenTree::Delimited(d, content, loc)) = current_stream.first() {
             if d.kind == self.0.kind {
                 // 2. Create new stream from content
                 let inner_stream = TokenStream::new(content);
@@ -259,14 +473,57 @@ impl<S: Shape> Shape for Enter<S> {
                         }
                     }
                     // Found non-whitespace, so inner didn't consume everything
-                    return Err(());
+                    let span = match tree {
+                        TokenTree::Token(t) => t.location.span,
+                        TokenTree::Delimited(_, _, loc) => loc.span,
+                        _ => loc.span, // Fallback
+                    };
+                    return Err(ParseError::new(span, "Expected end of group".into()));
                 }
 
                 return Ok((res, current_stream.advance(1)));
             }
         }
 
-        Err(())
+        let span = if let Some(TokenTree::Token(t)) = current_stream.first() {
+            t.location.span
+        } else {
+            (0, 0).into()
+        };
+        Err(ParseError::new(
+            span,
+            format!("Expected {}", self.0.describe()),
+        ))
+    }
+
+    fn complete<'a>(
+        &self,
+        stream: TokenStream<'a>,
+        context: &mut dyn MatchContext,
+        cursor: usize,
+    ) -> Vec<CompletionItem> {
+        let mut current_stream = stream;
+
+        // Skip whitespace
+        while let Some(tree) = current_stream.first() {
+            if let TokenTree::Token(token) = tree {
+                if token.kind == AtomKind::Whitespace {
+                    current_stream = current_stream.advance(1);
+                    continue;
+                }
+            }
+            break;
+        }
+
+        if let Some(TokenTree::Delimited(d, content, loc)) = current_stream.first() {
+            if d.kind == self.0.kind {
+                if loc.contains(cursor) {
+                    let inner_stream = TokenStream::new(content);
+                    return self.1.complete(inner_stream, context, cursor);
+                }
+            }
+        }
+        vec![]
     }
 }
 
@@ -291,7 +548,10 @@ impl<A: Shape, B: Shape> Shape for Adjacent<A, B> {
         // Check for whitespace at the start of stream_after_a
         if let Some(TokenTree::Token(token)) = stream_after_a.first() {
             if token.kind == AtomKind::Whitespace {
-                return Err(());
+                return Err(ParseError::new(
+                    token.location.span,
+                    "Unexpected whitespace".into(),
+                ));
             }
         }
 
@@ -340,7 +600,12 @@ impl Shape for End {
                     continue;
                 }
             }
-            return Err(());
+            let span = match tree {
+                TokenTree::Token(t) => t.location.span,
+                TokenTree::Delimited(_, _, loc) => loc.span,
+                _ => (0, 0).into(),
+            };
+            return Err(ParseError::new(span, "Expected end of input".into()));
         }
         Ok((TokenTree::Empty, current_stream))
     }

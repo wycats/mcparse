@@ -1,7 +1,7 @@
 use crate::atom::AtomKind;
 use crate::language::Language;
 use crate::r#macro::{ExpansionResult, MacroContext};
-use crate::shape::{Associativity, MatchContext, MatchResult, Precedence};
+use crate::shape::{Associativity, MatchContext, MatchResult, ParseError, Precedence};
 use crate::token::{TokenStream, TokenTree};
 
 pub struct Parser<'a, L: Language> {
@@ -18,7 +18,7 @@ impl<'a, L: Language> Parser<'a, L> {
     pub fn parse(&mut self) -> Result<TokenTree, String> {
         let (tree, _) = self
             .parse_expression(self.stream.clone(), Precedence(0))
-            .map_err(|_| "Parse failed".to_string())?;
+            .map_err(|e| format!("Parse failed: {}", e.message))?;
         Ok(tree)
     }
 
@@ -56,7 +56,9 @@ impl<'a, L: Language> Parser<'a, L> {
                     let context = MacroContext;
                     match mac.expand(args, None, &context) {
                         ExpansionResult::Ok(expanded) => return Ok((expanded, next_stream)),
-                        ExpansionResult::Error(_) => return Err(()),
+                        ExpansionResult::Error(msg) => {
+                            return Err(ParseError::new((0, 0).into(), msg))
+                        }
                     }
                 }
             }
@@ -66,7 +68,7 @@ impl<'a, L: Language> Parser<'a, L> {
         if let Some(tree) = current_stream.first() {
             Ok((tree.clone(), current_stream.advance(1)))
         } else {
-            Err(())
+            Err(ParseError::new((0, 0).into(), "Unexpected EOF".into()))
         }
     }
 }
@@ -134,7 +136,9 @@ impl<'a, L: Language> MatchContext for Parser<'a, L> {
                     ExpansionResult::Ok(expanded) => {
                         lhs = expanded;
                     }
-                    ExpansionResult::Error(_) => return Err(()),
+                    ExpansionResult::Error(msg) => {
+                        return Err(ParseError::new((0, 0).into(), msg))
+                    }
                 }
             } else {
                 break;

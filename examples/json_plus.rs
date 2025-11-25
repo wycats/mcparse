@@ -1,5 +1,6 @@
 use mcparse::{
     atom::{Atom, AtomKind, VariableRole},
+    define_atom, define_language,
     highlighter::{HighlightStyle, Highlighter},
     language::{Delimiter, Language, VariableRules},
     lexer::lex,
@@ -10,13 +11,10 @@ use mcparse::{
 
 // --- Atoms ---
 
-#[derive(Debug)]
-struct Whitespace;
-impl Atom for Whitespace {
-    fn kind(&self) -> AtomKind {
-        AtomKind::Whitespace
-    }
-    fn parse<'a>(&self, input: Cursor<'a>) -> Option<(Token, Cursor<'a>)> {
+define_atom! {
+    struct Whitespace;
+    kind = AtomKind::Whitespace;
+    parse(input) {
         let mut len = 0;
         for c in input.rest.chars() {
             if c.is_whitespace() {
@@ -40,7 +38,7 @@ impl Atom for Whitespace {
             None
         }
     }
-    fn highlight(&self, token: &Token, highlighter: &mut dyn Highlighter) {
+    highlight(token, highlighter) {
         highlighter.highlight(token, HighlightStyle::None);
     }
 }
@@ -72,13 +70,10 @@ impl Atom for Punctuation {
     }
 }
 
-#[derive(Debug)]
-struct StringLiteral;
-impl Atom for StringLiteral {
-    fn kind(&self) -> AtomKind {
-        AtomKind::String
-    }
-    fn parse<'a>(&self, input: Cursor<'a>) -> Option<(Token, Cursor<'a>)> {
+define_atom! {
+    struct StringLiteral;
+    kind = AtomKind::String;
+    parse(input) {
         if input.rest.starts_with('"') {
             let mut len = 1;
             let mut escaped = false;
@@ -104,18 +99,15 @@ impl Atom for StringLiteral {
         }
         None
     }
-    fn highlight(&self, token: &Token, highlighter: &mut dyn Highlighter) {
+    highlight(token, highlighter) {
         highlighter.highlight(token, HighlightStyle::String);
     }
 }
 
-#[derive(Debug)]
-struct NumberLiteral;
-impl Atom for NumberLiteral {
-    fn kind(&self) -> AtomKind {
-        AtomKind::Number
-    }
-    fn parse<'a>(&self, input: Cursor<'a>) -> Option<(Token, Cursor<'a>)> {
+define_atom! {
+    struct NumberLiteral;
+    kind = AtomKind::Number;
+    parse(input) {
         let mut len = 0;
         for c in input.rest.chars() {
             if c.is_ascii_digit() {
@@ -139,48 +131,12 @@ impl Atom for NumberLiteral {
             None
         }
     }
-    fn highlight(&self, token: &Token, highlighter: &mut dyn Highlighter) {
+    highlight(token, highlighter) {
         highlighter.highlight(token, HighlightStyle::Number);
     }
 }
 
 // --- Language ---
-
-#[derive(Debug)]
-struct JsonPlusLang {
-    atoms: Vec<Box<dyn Atom>>,
-    delimiters: Vec<Delimiter>,
-    macros: Vec<Box<dyn Macro>>,
-    variable_rules: Box<dyn VariableRules>,
-}
-
-impl JsonPlusLang {
-    fn new() -> Self {
-        Self {
-            atoms: vec![
-                Box::new(Whitespace),
-                Box::new(Punctuation(":".into())),
-                Box::new(Punctuation(",".into())),
-                Box::new(StringLiteral),
-                Box::new(NumberLiteral),
-            ],
-            delimiters: vec![
-                Delimiter {
-                    kind: "brace",
-                    open: "{",
-                    close: "}",
-                },
-                Delimiter {
-                    kind: "bracket",
-                    open: "[",
-                    close: "]",
-                },
-            ],
-            macros: vec![],
-            variable_rules: Box::new(NoOpVariableRules),
-        }
-    }
-}
 
 #[derive(Debug)]
 struct NoOpVariableRules;
@@ -190,19 +146,28 @@ impl VariableRules for NoOpVariableRules {
     }
 }
 
-impl Language for JsonPlusLang {
-    fn atoms(&self) -> &[Box<dyn Atom>] {
-        &self.atoms
-    }
-    fn delimiters(&self) -> &[Delimiter] {
-        &self.delimiters
-    }
-    fn macros(&self) -> &[Box<dyn Macro>] {
-        &self.macros
-    }
-    fn variable_rules(&self) -> &dyn VariableRules {
-        self.variable_rules.as_ref()
-    }
+define_language! {
+    struct JsonPlusLang;
+    atoms = [
+        Whitespace,
+        Punctuation(":".into()),
+        Punctuation(",".into()),
+        StringLiteral,
+        NumberLiteral
+    ];
+    delimiters = [
+        Delimiter {
+            kind: "brace",
+            open: "{",
+            close: "}",
+        },
+        Delimiter {
+            kind: "bracket",
+            open: "[",
+            close: "]",
+        },
+    ];
+    variable_rules = NoOpVariableRules;
 }
 
 // --- Shapes ---

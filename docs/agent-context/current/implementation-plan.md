@@ -1,16 +1,40 @@
-# Implementation Plan: Phase 3 - Tooling & Incrementalism
+# Implementation Plan: Phase 4 - Documentation & Guides
 
 ## Goal
 
-Enhance the developer experience and tooling around McParse. This includes better debugging output, reducing boilerplate with macros, and creating interactive demos to showcase highlighting and completion. We will also lay the groundwork for incremental parsing.
+Create comprehensive documentation for McParse to make it accessible and easy to use. This involves setting up a "Book" with tutorials and guides, and ensuring the API documentation is polished.
 
-## Steps
+## Detailed Steps
 
-1.  **Pretty Printer**: Implement a custom `Debug` or `Display` for `TokenTree` to make it easier to read (compact but informative).
-2.  **Macros**: Create `macro_rules!` to simplify the definition of Atoms and Shapes, reducing the verbosity seen in `examples/json_plus.rs`.
-3.  **Syntax Highlighting**: Refine the highlighter to support more semantic tokens and ensure it works well with the new macros.
-4.  **Tab Completion**: Implement the `complete` method in `Shape` and the necessary infrastructure to suggest completions at a given cursor position.
-5.  **Interactive Demos**:
-    - Build a simple TUI (using `crossterm` or similar) to demonstrate real-time highlighting.
-    - Build a demo for tab completion where the user can press Tab to see suggestions.
-6.  **Incrementalism**: (Stretch) Begin exploring incremental re-lexing and parsing.
+### 1. Setup MdBook
+
+- **Task**: Initialize the documentation site.
+- **Details**:
+  - Install `mdbook` (if not present, or just use the binary).
+  - Initialize `docs/book` structure.
+  - Configure `book.toml`.
+  - Set up a GitHub Action (or just a script) to build/deploy (optional for now).
+
+### 2. "The McParse Book" Content
+
+- **Introduction & Philosophy**:
+  - Explain the "Shape Algebra" and "Atomic Lexing" concepts.
+  - Explain why this approach is better than Regex or Parser Combinators for IDEs.
+- **Tutorial: JSON Parser**:
+  - Walk through building a JSON parser from scratch.
+  - Cover: Defining Atoms, Shapes, and handling delimiters.
+- **Tutorial: Scripting Language**:
+  - Walk through building "MiniScript" (or similar).
+  - Cover: Macros, Variable Binding, Hygiene, and Expressions.
+- **Advanced Topics**:
+  - Deep dive into Error Recovery.
+  - Deep dive into Incremental Parsing (conceptual).
+  - Deep dive into Custom Shapes.
+
+### 3. API Documentation
+
+- **Task**: Polish Rustdoc comments.
+- **Details**:
+  - Ensure all public items in `src/lib.rs`, `src/shape.rs`, `src/atom.rs`, etc., have doc comments.
+  - Add examples to doc comments where appropriate (doctests).
+  - Run `cargo doc --open` to verify the output.

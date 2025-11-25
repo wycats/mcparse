@@ -45,3 +45,21 @@ This file tracks key architectural and design decisions made throughout the proj
 - **Context**: The parser needs to be able to recover from syntax errors and continue parsing subsequent statements to provide a good IDE experience.
 - **Decision**: Introduced a `recover(shape, terminator)` combinator that attempts to match a shape and, on failure, skips tokens until a terminator is found, returning a `TokenTree::Error`.
 - **Rationale**: This provides a declarative way to specify synchronization points (like semicolons or closing braces) directly in the grammar, keeping the error recovery logic local to the relevant shapes.
+
+### [2025-11-27] Structured Parse Errors
+
+- **Context**: The `Shape` trait originally returned `Result<T, ()>`, which meant parse failures carried no information about *what* was expected.
+- **Decision**: Refactored `Shape` to return `Result<T, ParseError>`. Added `Matcher::describe()` to allow shapes to self-document their expectations (e.g., "Expected Identifier").
+- **Rationale**: This enables the parser to generate rich, user-friendly error messages automatically without requiring the grammar writer to manually instrument every failure point.
+
+### [2025-11-27] Red/Green Tree Architecture for Incrementalism
+
+- **Context**: We need a strategy for incremental parsing that supports efficient updates without re-parsing the entire file.
+- **Decision**: Adopted the "Red/Green Tree" model (inspired by Roslyn/Rowan). "Green" nodes are immutable, position-independent storage. "Red" nodes are transient cursors that provide absolute offsets and parent pointers.
+- **Rationale**: This separation allows for structural sharing (cheap cloning of subtrees) and efficient re-use of unchanged nodes during incremental updates.
+
+### [2025-11-27] Tree-Based Invalidation
+
+- **Context**: When a user edits the source code, we need to determine which parts of the parse tree are invalid.
+- **Decision**: Edits will be mapped to the deepest containing node in the Green Tree. That node and its ancestors are invalidated. We will re-lex the content of the invalidated node and attempt to splice new tokens in.
+- **Rationale**: This provides a coarse-grained but robust invalidation strategy that leverages the hierarchical structure of the code (e.g., re-parsing just a single function body) without complex state tracking.

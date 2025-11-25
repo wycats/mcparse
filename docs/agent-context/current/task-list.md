@@ -1,10 +1,8 @@
-# Current Phase: Phase 3 - Tooling & Incrementalism
+# Phase 4 Task List
 
-## Tasks
-
-- [ ] Implement `TokenTree` pretty printer.
-- [ ] Implement `macro_rules!` for Shapes/Atoms.
-- [ ] Implement Tab Completion logic in `Shape` trait.
-- [ ] Create `examples/interactive_highlight.rs` (TUI demo).
-- [ ] Create `examples/interactive_completion.rs` (TUI demo).
-- [ ] (Stretch) Prototype incremental parsing.
+- [ ] Set up `mdbook` skeleton.
+- [ ] Write "Introduction & Philosophy" chapter.
+- [ ] Write "Tutorial: JSON Parser" chapter.
+- [ ] Write "Tutorial: Scripting Language" chapter.
+- [ ] Write "Advanced Topics" chapter.
+- [ ] Polish API documentation (`cargo doc`).

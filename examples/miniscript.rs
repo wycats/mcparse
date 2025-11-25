@@ -155,6 +155,10 @@ impl Matcher for AnyIdentifier {
             _ => false,
         }
     }
+
+    fn describe(&self) -> String {
+        "Identifier".to_string()
+    }
 }
 
 // --- Macros ---

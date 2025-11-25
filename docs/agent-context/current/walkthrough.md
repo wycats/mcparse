@@ -1,3 +1,9 @@
-# Walkthrough
+# Walkthrough - Phase 4: Documentation & Guides
 
-(This file will be populated as work progresses in the current phase.)
+This phase focuses on creating comprehensive documentation for `mcparse`, including a "Book" with tutorials and guides, and polished API documentation.
+
+## Work in Progress
+
+- [ ] Set up `mdbook`.
+- [ ] Write tutorials.
+

@@ -19,11 +19,27 @@ fn lex_group<'a>(
 ) -> (Vec<TokenTree>, Cursor<'a>) {
     let mut trees = Vec::new();
     let mut previous_token: Option<Token> = None;
+    let mut pending_unknown: Option<(usize, String)> = None;
 
     'outer: while !cursor.rest.is_empty() {
+        // Helper to flush pending unknown tokens
+        let mut flush_unknown = |trees: &mut Vec<TokenTree>| {
+            if let Some((start, text)) = pending_unknown.take() {
+                let len = text.len();
+                let span = SourceSpan::new(start.into(), len.into());
+                let location = SourceLocation { span };
+                trees.push(TokenTree::Token(Token {
+                    kind: AtomKind::Other("Unknown".to_string()),
+                    text,
+                    location,
+                }));
+            }
+        };
+
         // 1. Check for terminator (close delimiter)
         if let Some(term) = terminator {
             if cursor.rest.starts_with(term.close) {
+                flush_unknown(&mut trees);
                 return (trees, cursor);
             }
         }
@@ -31,6 +47,8 @@ fn lex_group<'a>(
         // 2. Check for openers (delimiters)
         for delim in language.delimiters() {
             if cursor.rest.starts_with(delim.open) {
+                flush_unknown(&mut trees);
+
                 let start_offset = cursor.offset;
                 let inner_cursor = cursor.advance(delim.open.len());
                 let (inner_trees, next_cursor) = lex_group(inner_cursor, language, Some(delim));
@@ -50,19 +68,28 @@ fn lex_group<'a>(
                     previous_token = None;
                     continue 'outer;
                 } else {
-                    // Unclosed delimiter - treat as error or just stop?
-                    // For now, we return what we have. The caller will see we didn't consume everything if they check.
-                    // But here we are inside a recursive call.
-                    // If we don't find the closer, we probably hit EOF.
-                    return (trees, next_cursor);
+                    // Unclosed delimiter - treat as a delimited group that extends to where the inner lexer stopped.
+                    // This allows completion and partial parsing to work inside unclosed groups.
+                    let span = SourceSpan::new(
+                        start_offset.into(),
+                        (next_cursor.offset - start_offset).into(),
+                    );
+                    let location = SourceLocation { span };
+                    trees.push(TokenTree::Delimited(delim.clone(), inner_trees, location));
+
+                    cursor = next_cursor;
+                    previous_token = None;
+                    // We continue, but likely next_cursor is at EOF or a mismatched closer, so the loop will handle it.
+                    continue 'outer;
                 }
             }
         }
 
         // 3. Check for atoms
-        let mut matched_atom = false;
         for atom in language.atoms() {
             if let Some((mut token, next_cursor)) = atom.parse(cursor) {
+                flush_unknown(&mut trees);
+
                 // Apply variable rules
                 if let AtomKind::Identifier(_) = token.kind {
                     let role = language
@@ -79,16 +106,32 @@ fn lex_group<'a>(
                 }
 
                 cursor = next_cursor;
-                matched_atom = true;
-                break;
+                continue 'outer;
             }
         }
 
-        if !matched_atom {
-            // Skip one character to avoid infinite loop
-            let char_len = cursor.rest.chars().next().unwrap().len_utf8();
-            cursor = cursor.advance(char_len);
+        // No match found - accumulate unknown character
+        let char_len = cursor.rest.chars().next().unwrap().len_utf8();
+        let char_text = &cursor.rest[..char_len];
+
+        if let Some((_, ref mut text)) = pending_unknown {
+            text.push_str(char_text);
+        } else {
+            pending_unknown = Some((cursor.offset, char_text.to_string()));
         }
+        cursor = cursor.advance(char_len);
+    }
+
+    // Flush any remaining unknown text at EOF
+    if let Some((start, text)) = pending_unknown {
+        let len = text.len();
+        let span = SourceSpan::new(start.into(), len.into());
+        let location = SourceLocation { span };
+        trees.push(TokenTree::Token(Token {
+            kind: AtomKind::Other("Unknown".to_string()),
+            text,
+            location,
+        }));
     }
 
     (trees, cursor)
@@ -160,6 +203,21 @@ mod tests {
             }
         } else {
             panic!("Expected delimited");
+        }
+    }
+
+    #[test]
+    fn test_lex_unknown() {
+        let lang = MockLanguage::new();
+        let input = "123";
+        let trees = lex(input, &lang);
+
+        assert_eq!(trees.len(), 1);
+        if let TokenTree::Token(t) = &trees[0] {
+            assert_eq!(t.text, "123");
+            assert!(matches!(t.kind, AtomKind::Other(ref s) if s == "Unknown"));
+        } else {
+            panic!("Expected token");
         }
     }
 }
