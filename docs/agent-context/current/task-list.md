@@ -8,6 +8,6 @@
 - [x] Implement Variable Binding logic (`VariableRules`).
 - [x] Implement Atomic Lexer (`src/lexer.rs`).
 - [x] Implement Macro Expansion loop.
-- [ ] Implement Error Recovery logic.
+- [x] Implement Error Recovery logic.
 - [ ] Implement `JsonPlus` example language (Integration Test).
 - [ ] Implement `MiniScript` example language (Integration Test).

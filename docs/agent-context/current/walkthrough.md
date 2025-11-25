@@ -69,3 +69,18 @@ We implemented the core parsing loop that handles macro expansion and operator p
 - `src/macro.rs`: Updated `Macro` trait to use `Precedence` and `Associativity`.
 - `src/parser.rs`: Implemented the `Parser` struct with the `parse_expression` loop, handling prefix and infix macros.
 - `src/lib.rs`: Exported `Parser`.
+
+## Error Recovery
+
+We implemented a "forgiving" parsing mechanism using the `recover` combinator.
+
+### Key Decisions
+
+1.  **Error TokenTree**: We added `TokenTree::Error(String)` to represent a part of the syntax tree that failed to parse but was recovered from.
+2.  **Recover Shape**: We introduced `recover(shape, terminator)` which attempts to match `shape`. If it fails, it skips tokens until it finds a token matching `terminator` (or EOF), and returns a `TokenTree::Error` containing the skipped tokens' info. This allows the parser to continue parsing subsequent statements even after a syntax error.
+
+### Implementation Details
+
+- `src/token.rs`: Added `TokenTree::Error`.
+- `src/shape.rs`: Added `Recover` struct and `recover` function.
+- `src/parser.rs`: Added unit test `test_recover` verifying that the parser can skip malformed input and stop at a delimiter.

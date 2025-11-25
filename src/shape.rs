@@ -26,18 +26,30 @@ pub type MatchResult<'a> = Result<(TokenTree, TokenStream<'a>), ()>;
 pub type CompletionFuture<'a> = ();
 
 pub trait MatchContext {
-    fn parse_expression<'a>(&mut self, stream: TokenStream<'a>, precedence: Precedence) -> MatchResult<'a>;
+    fn parse_expression<'a>(
+        &mut self,
+        stream: TokenStream<'a>,
+        precedence: Precedence,
+    ) -> MatchResult<'a>;
 }
 
 pub struct NoOpMatchContext;
 impl MatchContext for NoOpMatchContext {
-    fn parse_expression<'a>(&mut self, _stream: TokenStream<'a>, _precedence: Precedence) -> MatchResult<'a> {
+    fn parse_expression<'a>(
+        &mut self,
+        _stream: TokenStream<'a>,
+        _precedence: Precedence,
+    ) -> MatchResult<'a> {
         Err(())
     }
 }
 
 pub trait Shape: Debug + Send + Sync {
-    fn match_shape<'a>(&self, stream: TokenStream<'a>, context: &mut dyn MatchContext) -> MatchResult<'a>;
+    fn match_shape<'a>(
+        &self,
+        stream: TokenStream<'a>,
+        context: &mut dyn MatchContext,
+    ) -> MatchResult<'a>;
 
     fn adjacency(&self) -> AdjacencyConstraint {
         AdjacencyConstraint::None
@@ -95,7 +107,11 @@ impl Matcher for Delimiter {
 pub struct Term<M: Matcher>(pub M);
 
 impl<M: Matcher> Shape for Term<M> {
-    fn match_shape<'a>(&self, stream: TokenStream<'a>, _context: &mut dyn MatchContext) -> MatchResult<'a> {
+    fn match_shape<'a>(
+        &self,
+        stream: TokenStream<'a>,
+        _context: &mut dyn MatchContext,
+    ) -> MatchResult<'a> {
         let mut current_stream = stream;
 
         // Skip whitespace
@@ -130,7 +146,11 @@ pub fn term<M: Matcher + 'static>(matcher: M) -> impl Shape {
 pub struct Seq<A, B>(pub A, pub B);
 
 impl<A: Shape, B: Shape> Shape for Seq<A, B> {
-    fn match_shape<'a>(&self, stream: TokenStream<'a>, context: &mut dyn MatchContext) -> MatchResult<'a> {
+    fn match_shape<'a>(
+        &self,
+        stream: TokenStream<'a>,
+        context: &mut dyn MatchContext,
+    ) -> MatchResult<'a> {
         let (res_a, stream_after_a) = self.0.match_shape(stream, context)?;
         let (res_b, stream_after_b) = self.1.match_shape(stream_after_a, context)?;
         Ok((TokenTree::Group(vec![res_a, res_b]), stream_after_b))
@@ -147,7 +167,11 @@ pub fn seq<A: Shape + 'static, B: Shape + 'static>(a: A, b: B) -> impl Shape {
 pub struct Choice<A, B>(pub A, pub B);
 
 impl<A: Shape, B: Shape> Shape for Choice<A, B> {
-    fn match_shape<'a>(&self, stream: TokenStream<'a>, context: &mut dyn MatchContext) -> MatchResult<'a> {
+    fn match_shape<'a>(
+        &self,
+        stream: TokenStream<'a>,
+        context: &mut dyn MatchContext,
+    ) -> MatchResult<'a> {
         match self.0.match_shape(stream.clone(), context) {
             Ok(res) => Ok(res),
             Err(_) => self.1.match_shape(stream, context),
@@ -165,7 +189,11 @@ pub fn choice<A: Shape + 'static, B: Shape + 'static>(a: A, b: B) -> impl Shape 
 pub struct Rep<A>(pub A);
 
 impl<A: Shape> Shape for Rep<A> {
-    fn match_shape<'a>(&self, stream: TokenStream<'a>, context: &mut dyn MatchContext) -> MatchResult<'a> {
+    fn match_shape<'a>(
+        &self,
+        stream: TokenStream<'a>,
+        context: &mut dyn MatchContext,
+    ) -> MatchResult<'a> {
         let mut current_stream = stream;
         let mut results = Vec::new();
 
@@ -195,7 +223,11 @@ pub fn rep<A: Shape + 'static>(a: A) -> impl Shape {
 pub struct Enter<S>(pub Delimiter, pub S);
 
 impl<S: Shape> Shape for Enter<S> {
-    fn match_shape<'a>(&self, stream: TokenStream<'a>, context: &mut dyn MatchContext) -> MatchResult<'a> {
+    fn match_shape<'a>(
+        &self,
+        stream: TokenStream<'a>,
+        context: &mut dyn MatchContext,
+    ) -> MatchResult<'a> {
         // 1. Match delimiter (skipping whitespace)
         let mut current_stream = stream;
 
@@ -249,7 +281,11 @@ pub fn enter<S: Shape + 'static>(delimiter: Delimiter, inner: S) -> impl Shape {
 pub struct Adjacent<A, B>(pub A, pub B);
 
 impl<A: Shape, B: Shape> Shape for Adjacent<A, B> {
-    fn match_shape<'a>(&self, stream: TokenStream<'a>, context: &mut dyn MatchContext) -> MatchResult<'a> {
+    fn match_shape<'a>(
+        &self,
+        stream: TokenStream<'a>,
+        context: &mut dyn MatchContext,
+    ) -> MatchResult<'a> {
         let (res_a, stream_after_a) = self.0.match_shape(stream, context)?;
 
         // Check for whitespace at the start of stream_after_a
@@ -273,7 +309,11 @@ pub fn adjacent<A: Shape + 'static, B: Shape + 'static>(a: A, b: B) -> impl Shap
 pub struct Empty;
 
 impl Shape for Empty {
-    fn match_shape<'a>(&self, stream: TokenStream<'a>, _context: &mut dyn MatchContext) -> MatchResult<'a> {
+    fn match_shape<'a>(
+        &self,
+        stream: TokenStream<'a>,
+        _context: &mut dyn MatchContext,
+    ) -> MatchResult<'a> {
         Ok((TokenTree::Empty, stream))
     }
 }
@@ -287,7 +327,11 @@ pub fn empty() -> impl Shape {
 pub struct End;
 
 impl Shape for End {
-    fn match_shape<'a>(&self, stream: TokenStream<'a>, _context: &mut dyn MatchContext) -> MatchResult<'a> {
+    fn match_shape<'a>(
+        &self,
+        stream: TokenStream<'a>,
+        _context: &mut dyn MatchContext,
+    ) -> MatchResult<'a> {
         let mut current_stream = stream;
         while let Some(tree) = current_stream.first() {
             if let TokenTree::Token(token) = tree {
@@ -311,7 +355,11 @@ pub fn end() -> impl Shape {
 pub struct Expr(pub Precedence);
 
 impl Shape for Expr {
-    fn match_shape<'a>(&self, stream: TokenStream<'a>, context: &mut dyn MatchContext) -> MatchResult<'a> {
+    fn match_shape<'a>(
+        &self,
+        stream: TokenStream<'a>,
+        context: &mut dyn MatchContext,
+    ) -> MatchResult<'a> {
         context.parse_expression(stream, self.0)
     }
 }
@@ -337,4 +385,53 @@ pub fn separated<A: Shape + 'static + Clone, S: Shape + 'static + Clone>(
 pub fn joined<A: Shape + 'static + Clone>(a: A) -> impl Shape {
     // seq(a, rep(adjacent(empty(), a)))
     seq(a.clone(), rep(adjacent(empty(), a)))
+}
+
+// recover
+/// Tries to match `S`. If it fails, skips tokens until `M` matches (or EOF),
+/// and returns a `TokenTree::Error`.
+#[derive(Debug)]
+pub struct Recover<S, M>(pub S, pub M);
+
+impl<S: Shape, M: Matcher> Shape for Recover<S, M> {
+    fn match_shape<'a>(
+        &self,
+        stream: TokenStream<'a>,
+        context: &mut dyn MatchContext,
+    ) -> MatchResult<'a> {
+        match self.0.match_shape(stream.clone(), context) {
+            Ok(res) => Ok(res),
+            Err(_) => {
+                let mut current_stream = stream;
+                let mut skipped_count = 0;
+
+                while let Some(tree) = current_stream.first() {
+                    if self.1.matches(tree) {
+                        break;
+                    }
+                    // Also stop if we hit a closing delimiter?
+                    // For now, just rely on the matcher.
+
+                    current_stream = current_stream.advance(1);
+                    skipped_count += 1;
+                }
+
+                if skipped_count > 0 {
+                    Ok((
+                        TokenTree::Error(format!("Parse error, skipped {} tokens", skipped_count)),
+                        current_stream,
+                    ))
+                } else {
+                    // If we didn't skip anything and still failed (and didn't match terminator immediately),
+                    // it means we are at EOF or terminator.
+                    // If we are at terminator, we return Error but don't consume terminator.
+                    Ok((TokenTree::Error("Parse error".to_string()), current_stream))
+                }
+            }
+        }
+    }
+}
+
+pub fn recover<S: Shape + 'static, M: Matcher + 'static>(shape: S, terminator: M) -> impl Shape {
+    Recover(shape, terminator)
 }

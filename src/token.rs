@@ -22,6 +22,7 @@ pub enum TokenTree {
     Token(Token),
     Delimited(Delimiter, Vec<TokenTree>, SourceLocation),
     Group(Vec<TokenTree>), // For sequences
+    Error(String),
     Empty,
 }
 

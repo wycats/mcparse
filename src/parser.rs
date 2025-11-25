@@ -143,7 +143,7 @@ mod tests {
     use crate::lexer::lex;
     use crate::mock::MockLanguage;
     use crate::r#macro::{ExpansionResult, Macro, MacroContext};
-    use crate::shape::{expr, Precedence, Shape};
+    use crate::shape::{expr, recover, seq, term, Precedence, Shape};
     use crate::token::TokenTree;
 
     #[derive(Debug)]
@@ -248,6 +248,58 @@ mod tests {
             }
         } else {
             panic!("Expected Group, got {:?}", result);
+        }
+    }
+
+    #[test]
+    fn test_recover() {
+        // A macro that expects "foo" then "bar".
+        // If it fails, it recovers until ";".
+        
+        #[derive(Debug)]
+        struct RecoverMacro {
+            shape: Box<dyn Shape>,
+        }
+        
+        impl RecoverMacro {
+            fn new() -> Self {
+                Self {
+                    // Expect "foo" "bar", recover until ";"
+                    shape: Box::new(recover(seq(term("foo"), term("bar")), ";"))
+                }
+            }
+        }
+        
+        impl Macro for RecoverMacro {
+            fn name(&self) -> &str { "stmt" }
+            fn signature(&self) -> &dyn Shape { self.shape.as_ref() }
+            fn expand(&self, args: TokenTree, _lhs: Option<TokenTree>, _context: &MacroContext) -> ExpansionResult {
+                // args will be the result of recover.
+                // If it failed, it will be TokenTree::Error.
+                ExpansionResult::Ok(args)
+            }
+        }
+
+        let lang = MockLanguage::new()
+            .with_symbol(";")
+            .with_macro(Box::new(RecoverMacro::new()));
+            
+        // Input: stmt foo baz ;
+        // "foo" matches. "bar" fails (found "baz").
+        // recover should skip "baz" and stop at ";".
+        // Result should be Error.
+        
+        let input = "stmt foo baz ;";
+        let trees = lex(input, &lang);
+        let stream = TokenStream::new(&trees);
+        let mut parser = Parser::new(stream, &lang);
+        
+        let result = parser.parse().unwrap();
+        
+        if let TokenTree::Error(msg) = result {
+            assert!(msg.contains("skipped"));
+        } else {
+            panic!("Expected Error, got {:?}", result);
         }
     }
 }
