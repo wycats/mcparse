@@ -14,6 +14,7 @@
 - [ ] Implement Shape Algebra (Sequence, Choice, Repetition).
 - [ ] Implement Adjacency constraints and whitespace handling.
 - [ ] Implement basic Macro expansion loop.
+- [ ] Add integration tests for core parsing logic.
 
 ## Phase 3: Tooling Support
 
