@@ -1,24 +1,18 @@
-# Implementation Plan: Prototyping Core Traits
+# Implementation Plan: Core Parsing Engine & Semantics
 
 ## Goal
 
-Translate the design sketches into actual Rust code, creating the foundational traits and types for McParse. We will also build a basic highlighting printer and error reporter to visually verify our progress.
+Implement the core logic of McParse, including the shape algebra, macro expansion loop, variable binding/hygiene, and error recovery.
 
 ## Steps
 
-1.  **Project Setup**: Ensure `Cargo.toml` has necessary dependencies (e.g., `tokio` for async, `thiserror` for errors, `miette` for error reporting, `owo-colors` or similar for highlighting).
-2.  **Core Traits**: Implement the traits defined in `DESIGN.md` in `src/lib.rs` (or appropriate modules):
-    - `Atom` and `AtomKind`
-    - `Shape` and `AdjacencyConstraint`
-    - `Macro` and `MacroContext`
-    - `Language`
-    - `Highlighter` (new trait for syntax highlighting)
-3.  **Token Types**: Define `Token`, `TokenTree`, `Cursor`, and `SourceLocation`. Ensure `SourceLocation` is compatible with `miette`.
-4.  **Mock Implementation**: Create a dummy implementation of `Atom` (e.g., `WhitespaceAtom`, `IdentifierAtom`) to verify the traits compile and compose.
-5.  **Visual Verification**:
-    - Implement a simple `ANSIHighlighter` that implements `Highlighter`.
-    - Create a demo binary that:
-      - Constructs a simple `Shape`.
-      - Parses a string.
-      - Prints the highlighted output to the terminal.
-      - Intentionally triggers a parse error and prints the `miette` report to verify source locations.
+1.  **Shape Algebra**: Implement the combinators defined in `DESIGN.md` (`seq`, `choice`, `rep`, `opt`, `adjacent`, `separated`).
+2.  **Adjacency & Whitespace**: Implement the logic to enforce adjacency constraints and handle whitespace atoms correctly within shapes.
+3.  **Variable Binding**: Implement the `VariableRules` trait and integrate it into the atomic lexing phase to identify bindings and references.
+4.  **Macro Expansion**: Implement the main parsing loop that consumes tokens, identifies macros (respecting shadowing), and expands them.
+5.  **Error Recovery**: Implement "forgiving" parsing logic in shapes (e.g., skipping to delimiters) to handle malformed input gracefully.
+6.  **Integration Testing (JsonPlus)**: Use the "JsonPlus" aspirational language as the primary integration test.
+    - Scaffold `examples/json_plus.rs` early.
+    - As we implement shape combinators, use them to define `JsonPlus` shapes.
+    - Verify parsing of JSON constructs (objects, arrays) to test recursion and delimiters.
+    - Verify `import` macro to test macro expansion and binding.

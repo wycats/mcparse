@@ -1,9 +1,10 @@
-# Current Phase: Prototyping Core Traits
+# Current Phase: Core Parsing Engine & Semantics
 
 ## Tasks
-- [x] Project Setup (dependencies: `tokio`, `thiserror`, `miette`, `owo-colors`).
-- [x] Implement Core Traits (`Atom`, `Shape`, `Macro`, `Language`, `Highlighter`).
-- [x] Define Token Types (`Token`, `TokenTree`, `Cursor`, `SourceLocation`).
-- [x] Create Mock Implementations.
-- [x] Implement `ANSIHighlighter` and `Printer`.
-- [x] Create visual verification demo (highlighting + miette errors).
+
+- [ ] Implement Shape Algebra (`seq`, `choice`, `rep`, `opt`, `adjacent`, `separated`).
+- [ ] Implement Adjacency & Whitespace handling.
+- [ ] Implement Variable Binding logic (`VariableRules`).
+- [ ] Implement Macro Expansion loop.
+- [ ] Implement Error Recovery logic.
+- [ ] Implement `JsonPlus` example language (Integration Test).

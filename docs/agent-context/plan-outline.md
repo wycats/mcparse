@@ -1,6 +1,6 @@
 # Project Plan Outline
 
-## Phase 1: Design & Prototyping (Current)
+## Phase 1: Design & Prototyping (Completed)
 
 - [x] Refine `DESIGN.md` with concrete Rust interfaces.
 - [x] Create an aspirational example of a language definition.
@@ -9,21 +9,22 @@
 - [x] Implement a basic syntax highlighter and printer for verification.
 - [x] Integrate `miette` for source location verification.
 
-## Phase 2: Core Parsing Engine
+## Phase 2: Core Parsing Engine & Semantics (Active)
 
 - [ ] Implement Shape Algebra (Sequence, Choice, Repetition).
 - [ ] Implement Adjacency constraints and whitespace handling.
-- [ ] Implement basic Macro expansion loop.
+- [ ] Implement Macro expansion loop with Variable Binding/Hygiene.
+- [ ] Implement Error Recovery strategies in Shapes.
 - [ ] Add integration tests for core parsing logic.
 
-## Phase 3: Tooling Support
+## Phase 3: Tooling & Incrementalism
 
-- [ ] Implement Syntax Highlighting infrastructure.
+- [ ] Implement advanced Syntax Highlighting (semantic tokens).
 - [ ] Implement Tab Completion infrastructure.
-- [ ] Implement Source Location tracking and Incremental updates.
+- [ ] Implement Incremental Parsing and re-lexing.
 
-## Phase 4: Advanced Features
+## Phase 4: Advanced Features & Ecosystem
 
-- [ ] Variable Binding and Hygiene.
-- [ ] Error Recovery and Forgiving Parsing.
+- [ ] Declarative Macro Syntax.
+- [ ] Gradual Typing Syntax exploration.
 - [ ] Wasm bindings and TypeScript integration.
