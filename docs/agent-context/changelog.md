@@ -64,3 +64,13 @@
 - **Verification**: Created `examples/scoping_demo.rs` verifying correct handling of shadowing, block scopes, and hoisting checks.
 - **Documentation**: Updated "The McParse Book" to reflect the new architecture and updated `docs/design/variable-binding-architecture.md`.
 - **Migration**: Updated `miniscript` and `repl` examples to use the new API.
+
+## Phase 7: Incremental Parsing Implementation (Completed)
+
+- **Architecture**: Implemented the "Red/Green Tree" model for structural sharing and efficient incremental updates.
+- **Core Structures**:
+  - `GreenTree`: Immutable, position-independent tree.
+  - `RedNode`: Transient cursor with absolute offsets.
+  - `TextEdit`: Struct representing a range replacement.
+- **Logic**: Implemented `incremental_relex` to conservatively re-lex edited blocks without re-parsing the whole file.
+- **Verification**: Created `examples/incremental_demo.rs` demonstrating successful incremental updates and correct failure modes for structural changes.

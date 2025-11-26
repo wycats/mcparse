@@ -1,50 +1,49 @@
-# Phase 6: Variable Binding & Scoping Architecture (Walkthrough)
+# Phase 7: Incremental Parsing Implementation (Walkthrough)
 
 ## Goal
 
-Implement a robust, 4-step parsing architecture that decouples variable binding from the initial lexical analysis, enabling proper scoping rules while maintaining a simple atomic lexer.
+Implement the "Red/Green Tree" architecture and incremental re-lexing strategy to enable efficient updates to the parse tree when the source code changes.
 
 ## Changes
 
-### 1. Architectural Shift
+### 1. Green Tree Structure (`src/incremental.rs`)
 
-We moved from a single-pass "Lexer + VariableRules" model to a multi-pass model:
+We implemented the **Green Tree** data structure, which is immutable and position-independent.
 
-1.  **Lexing**: Produces `TokenTree`.
-2.  **Binding Pass**: Identifies declarations (`BindingPass` trait).
-3.  **Reference Pass**: Resolves references (`ReferencePass` trait).
-4.  **Parsing**: Matches shapes.
+- `GreenToken`: Stores `AtomKind` and text. Knows its width but not its offset.
+- `GreenTree`: Recursive enum (`Token`, `Delimited`, `Group`, `Empty`).
+- `GreenTree::from_token_tree`: Converts legacy `TokenTree` (with absolute offsets) to `GreenTree`.
 
-### 2. Core Data Structures
+### 2. Red Node Traversal (`src/incremental.rs`)
 
-- **`AtomKind`**: Removed `VariableRole` from `AtomKind::Identifier`. Identifiers are now just identifiers during lexing.
-- **`Token`**: Added a `binding: Option<BindingId>` field to store the resolution result.
-- **`Language` Trait**: Replaced `variable_rules()` with `binding_pass()` and `reference_pass()`.
+We implemented the **Red Node** cursor, which provides absolute offsets on demand.
 
-### 3. Scoping Infrastructure (`src/scoping.rs`)
+- `RedNode`: Wraps a `GreenTree` reference and an `offset`.
+- `RedNode::children()`: Lazily computes children with correct absolute offsets.
+- `RedNode::find_at_offset(target)`: Efficiently locates the node at a specific position.
 
-- Defined `ScopeStack` to manage nested scopes.
-- Defined `BindingPass` and `ReferencePass` traits.
-- Provided `NoOpBindingPass` and `NoOpReferencePass` as defaults.
-- **Implemented `SimpleBindingPass`**: A default implementation that scans for a keyword (e.g., `let`) followed by an identifier to define bindings. It handles block recursion automatically.
-- **Implemented `SimpleReferencePass`**: A default implementation that resolves identifiers against the `ScopeStack` populated by the binding pass.
-- **Implemented `scope_tokens`**: A helper function to orchestrate the passes.
+### 3. Incremental Re-lexing (`src/incremental.rs`)
+
+We implemented `incremental_relex`, a function that attempts to apply a `TextEdit` by re-lexing only the smallest containing `Delimited` block.
+
+- **Algorithm**:
+    1.  Find the deepest `Delimited` node that fully contains the edit range.
+    2.  Extract the text of its children.
+    3.  Apply the edit to that text.
+    4.  Re-lex the new text using the `Language`.
+    5.  If successful, return a new `GreenTree` with the updated children, sharing the rest of the tree structure.
+    6.  If the edit touches delimiters or cannot be isolated, return `RelexResult::Failed` (signaling a need for full re-parse).
 
 ### 4. Verification
 
-- Created `examples/scoping_demo.rs` to verify the scoping logic.
-- Confirmed that:
-    - Variable definitions are correctly identified.
-    - References are resolved to the correct `BindingId`.
-    - Shadowing works as expected (inner scopes override outer scopes).
-    - References before definition (hoisting check) remain unbound.
+- Created `examples/incremental_demo.rs`.
+- Verified:
+    - **Structural Sharing**: The root node width matches the text length.
+    - **Incremental Update**: Editing inside a block (`{ let y = 2; }` -> `{ let y = 3; }`) successfully updates just that block.
+    - **Failure Case**: Breaking a delimiter (deleting `}`) correctly fails the incremental step, as expected.
+    - **Red Node Traversal**: Confirmed we can find tokens by absolute offset in the Green Tree.
 
-### 5. Documentation
+## Key Decisions
 
-- Updated **The McParse Book** to describe the new architecture in "Hygiene & Scoping", "Contextual Keywords", and "Quick Start".
-- Updated `docs/design/variable-binding-architecture.md` with a retrospective on why the previous approach failed.
-
-### 6. Migration
-
-- Updated `miniscript` and `repl` examples to compile with the new API.
-- Fixed widespread compilation errors caused by the breaking changes to `Token` and `AtomKind`.
+- **Red/Green Split**: Adopted the standard Roslyn/Rowan model for structural sharing.
+- **Conservative Re-lexing**: We only re-lex if the edit is strictly contained within a block's *content*. Touching delimiters forces a failure (and thus a parent re-lex or full re-parse) to ensure safety.

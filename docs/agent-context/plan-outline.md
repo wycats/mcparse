@@ -53,14 +53,15 @@
 - [x] Update Macro Expansion to respect pre-calculated bindings.
 - [x] Verify context-free syntax constraints.
 
-## Phase 7: Incremental Parsing Implementation
+## Phase 7: Incremental Parsing Implementation (Completed)
 
-- [ ] Implement Red/Green Tree data structures.
-- [ ] Implement Tree-Based Invalidation logic.
-- [ ] Implement Conservative Re-lexing.
+- [x] Implement Red/Green Tree data structures.
+- [x] Implement Tree-Based Invalidation logic.
+- [x] Implement Conservative Re-lexing.
 
 ## Phase 8: Advanced Features & Ecosystem
 
+- [ ] Update "The McParse Book" with Incremental Parsing guide.
 - [ ] Declarative Macro Syntax.
 - [ ] Gradual Typing Syntax exploration.
 - [ ] Wasm bindings and TypeScript integration.

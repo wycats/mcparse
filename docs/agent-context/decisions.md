@@ -93,3 +93,15 @@ This file tracks key architectural and design decisions made throughout the proj
 - **Context**: The "Lexing-Time Binding" approach (using `VariableRules` during atomic lexing) proved insufficient for block scoping and shadowing because the lexer is strictly linear and doesn't track nested scope state effectively (especially with lookahead limitations).
 - **Decision**: Replaced `VariableRules` with a multi-pass architecture: 1. Atomic Lexing (produces `TokenTree`), 2. `BindingPass` (identifies declarations), 3. `ReferencePass` (resolves references), 4. Parsing.
 - **Rationale**: This decouples the "what is a token" (Lexer) from "what does it mean in context" (Scoping). It allows for full tree traversal (handling nested blocks) and lookahead/lookbehind without complicating the core lexer. It also enables correct handling of shadowing and forward references (if desired).
+
+### [2025-12-02] Red/Green Tree Architecture
+
+- **Context**: To support efficient incremental updates, we need a tree structure that allows structural sharing (reusing unchanged parts of the tree). The existing `TokenTree` stored absolute offsets, making it unsuitable for sharing.
+- **Decision**: Implemented a "Green Tree" (immutable, position-independent, stores width) and a "Red Node" (transient cursor, stores absolute offset).
+- **Rationale**: This is the industry-standard approach (Roslyn, Rowan) for immutable syntax trees. It allows O(1) reuse of subtrees and O(log N) access to absolute positions.
+
+### [2025-12-02] Conservative Incremental Re-lexing
+
+- **Context**: When a user edits code, we want to re-lex as little as possible. However, re-lexing arbitrary ranges is dangerous due to context sensitivity (e.g., opening a comment).
+- **Decision**: We only attempt incremental re-lexing if the edit is strictly contained within the *content* of a `Delimited` node (e.g., inside `{ ... }`). If the edit touches the delimiters themselves, we fail and fall back to a wider scope.
+- **Rationale**: This guarantees that the surrounding context (the delimiters) remains invariant, making it safe to swap out the internals without re-analyzing the parent.
