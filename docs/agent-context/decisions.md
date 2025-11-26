@@ -114,6 +114,15 @@ This file tracks key architectural and design decisions made throughout the proj
 
 ### [2025-12-02] Partial Scope Collection
 
-- **Context**: To provide completions at a specific cursor position, we need the state of the scope stack *at that exact point*, not the final state after parsing the whole file.
+- **Context**: To provide completions at a specific cursor position, we need the state of the scope stack _at that exact point_, not the final state after parsing the whole file.
 - **Decision**: Added `collect_scope_at` to the `BindingPass` trait. This method traverses the token tree and stops populating the scope when it hits the target offset.
 - **Rationale**: This reuses the existing binding logic but adapts it for the specific needs of the completion engine, avoiding code duplication and ensuring that completions are always consistent with the language's scoping rules.
+
+### [2025-12-02] TT Muncher for Macro Options
+
+- **Context**: The `define_language!` macro needed to support optional arguments with varying syntax (e.g., `simple("let")` vs arbitrary expressions) for `binding_pass` and `reference_pass`. Simple `macro_rules!` pattern matching was becoming unwieldy and restrictive.
+- **Decision**: Refactored `define_language!` to use the "TT Muncher" pattern. The macro recursively consumes tokens, matching specific options one by one until the input is exhausted.
+- **Rationale**: This allows for:
+  1.  **Flexible Syntax**: We can define custom syntax like `simple(...)` easily.
+  2.  **Order Independence**: Options can theoretically be provided in any order (though currently we still enforce a rough structure, the pattern allows for relaxation).
+  3.  **Extensibility**: Adding new options in the future is just adding a new match arm, without breaking the main entry point.

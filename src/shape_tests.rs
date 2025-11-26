@@ -1,9 +1,7 @@
 #[cfg(test)]
 mod tests {
     use crate::atom::AtomKind;
-    use crate::shape::{
-        NoOpMatchContext, Shape, choice, seq, term,
-    };
+    use crate::shape::{NoOpMatchContext, Shape, choice, seq, term};
     use crate::token::{SourceLocation, Token, TokenStream, TokenTree};
     use miette::SourceSpan;
 

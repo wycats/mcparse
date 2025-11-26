@@ -101,22 +101,94 @@ macro_rules! define_language {
     };
 
     // Helper for binding_pass default
-    (@binding_pass $pass:expr) => { Box::new($pass) };
-    (@binding_pass) => { Box::new($crate::scoping::NoOpBindingPass) };
+    // (Removed old helpers as they are replaced by @parse_options)
 
-    // Helper for reference_pass default
-    (@reference_pass $pass:expr) => { Box::new($pass) };
-    (@reference_pass) => { Box::new($crate::scoping::NoOpReferencePass) };
+    // --- Option Parsing (TT Muncher) ---
 
-    // Main entry point
-    (
-        $(#[$meta:meta])*
-        struct $name:ident;
-        atoms = [ $($atoms:tt)* ];
-        delimiters = [ $($delimiters:tt)* ];
-        $(macros = [ $($macro:expr),* $(,)? ];)?
-        $(binding_pass = $binding_pass:expr;)?
-        $(reference_pass = $reference_pass:expr;)?
+    // Case: macros = [ ... ];
+    (@parse_options
+        meta = $meta:tt, name = $name:ident, atoms = $atoms:tt, delimiters = $delimiters:tt,
+        macros = $_old_macros:tt, binding_pass = $bp:tt, reference_pass = $rp:tt,
+        input = [ macros = [ $($m:expr),* $(,)? ]; $($rest:tt)* ]
+    ) => {
+        $crate::define_language! { @parse_options
+            meta = $meta, name = $name, atoms = $atoms, delimiters = $delimiters,
+            macros = [ $($(Box::new($m)),*)? ],
+            binding_pass = $bp, reference_pass = $rp,
+            input = [ $($rest)* ]
+        }
+    };
+
+    // Case: binding_pass = simple("kw");
+    (@parse_options
+        meta = $meta:tt, name = $name:ident, atoms = $atoms:tt, delimiters = $delimiters:tt,
+        macros = $macros:tt, binding_pass = $_old:tt, reference_pass = $rp:tt,
+        input = [ binding_pass = simple($kw:literal); $($rest:tt)* ]
+    ) => {
+        $crate::define_language! { @parse_options
+            meta = $meta, name = $name, atoms = $atoms, delimiters = $delimiters,
+            macros = $macros,
+            binding_pass = { Box::new($crate::scoping::SimpleBindingPass::new($kw)) },
+            reference_pass = $rp,
+            input = [ $($rest)* ]
+        }
+    };
+
+    // Case: binding_pass = expr;
+    (@parse_options
+        meta = $meta:tt, name = $name:ident, atoms = $atoms:tt, delimiters = $delimiters:tt,
+        macros = $macros:tt, binding_pass = $_old:tt, reference_pass = $rp:tt,
+        input = [ binding_pass = $e:expr; $($rest:tt)* ]
+    ) => {
+        $crate::define_language! { @parse_options
+            meta = $meta, name = $name, atoms = $atoms, delimiters = $delimiters,
+            macros = $macros,
+            binding_pass = { Box::new($e) },
+            reference_pass = $rp,
+            input = [ $($rest)* ]
+        }
+    };
+
+    // Case: reference_pass = simple;
+    (@parse_options
+        meta = $meta:tt, name = $name:ident, atoms = $atoms:tt, delimiters = $delimiters:tt,
+        macros = $macros:tt, binding_pass = $bp:tt, reference_pass = $_old:tt,
+        input = [ reference_pass = simple; $($rest:tt)* ]
+    ) => {
+        $crate::define_language! { @parse_options
+            meta = $meta, name = $name, atoms = $atoms, delimiters = $delimiters,
+            macros = $macros,
+            binding_pass = $bp,
+            reference_pass = { Box::new($crate::scoping::SimpleReferencePass) },
+            input = [ $($rest)* ]
+        }
+    };
+
+    // Case: reference_pass = expr;
+    (@parse_options
+        meta = $meta:tt, name = $name:ident, atoms = $atoms:tt, delimiters = $delimiters:tt,
+        macros = $macros:tt, binding_pass = $bp:tt, reference_pass = $_old:tt,
+        input = [ reference_pass = $e:expr; $($rest:tt)* ]
+    ) => {
+        $crate::define_language! { @parse_options
+            meta = $meta, name = $name, atoms = $atoms, delimiters = $delimiters,
+            macros = $macros,
+            binding_pass = $bp,
+            reference_pass = { Box::new($e) },
+            input = [ $($rest)* ]
+        }
+    };
+
+    // Case: Done (input empty)
+    (@parse_options
+        meta = [ $(#[$meta:meta])* ],
+        name = $name:ident,
+        atoms = [ $($atoms:tt)* ],
+        delimiters = [ $($delimiters:tt)* ],
+        macros = [ $($macros:expr),* ],
+        binding_pass = { $binding_pass_impl:expr },
+        reference_pass = { $reference_pass_impl:expr },
+        input = []
     ) => {
         $(#[$meta])*
         #[derive(Debug)]
@@ -141,9 +213,9 @@ macro_rules! define_language {
                 Self {
                     atoms,
                     delimiters,
-                    macros: vec![ $($(Box::new($macro)),*)? ],
-                    binding_pass: $crate::define_language!(@binding_pass $($binding_pass)?),
-                    reference_pass: $crate::define_language!(@reference_pass $($reference_pass)?),
+                    macros: vec![ $($macros),* ],
+                    binding_pass: $binding_pass_impl,
+                    reference_pass: $reference_pass_impl,
                 }
             }
         }
@@ -164,6 +236,26 @@ macro_rules! define_language {
             fn reference_pass(&self) -> &dyn $crate::scoping::ReferencePass {
                 self.reference_pass.as_ref()
             }
+        }
+    };
+
+    // Main entry point
+    (
+        $(#[$meta:meta])*
+        struct $name:ident;
+        atoms = [ $($atoms:tt)* ];
+        delimiters = [ $($delimiters:tt)* ];
+        $($rest:tt)*
+    ) => {
+        $crate::define_language! { @parse_options
+            meta = [ $(#[$meta])* ],
+            name = $name,
+            atoms = [ $($atoms)* ],
+            delimiters = [ $($delimiters)* ],
+            macros = [],
+            binding_pass = { Box::new($crate::scoping::NoOpBindingPass) },
+            reference_pass = { Box::new($crate::scoping::NoOpReferencePass) },
+            input = [ $($rest)* ]
         }
     };
 }

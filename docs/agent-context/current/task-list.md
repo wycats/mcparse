@@ -1,5 +1,8 @@
-- [x] Refactor `VariableRules` to be post-lexing
-- [x] Implement `complete` method on `Language` trait
-- [x] Implement `ScopeStack` traversal for completion
-- [x] Update `repl` example to use variable completion
-- [x] Verify completion inside unclosed delimiters
+# Phase 10: DSL Refinement (Task List)
+
+- [x] Refactor `define_language!` to use TT Muncher pattern.
+- [x] Implement `simple("kw")` syntax for `binding_pass`.
+- [x] Implement `simple` syntax for `reference_pass`.
+- [x] Update examples to use new syntax.
+- [x] Verify backward compatibility (existing tests pass).
+

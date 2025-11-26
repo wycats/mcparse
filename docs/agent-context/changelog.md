@@ -102,3 +102,13 @@
   - Updated `examples/repl.rs` to demonstrate variable completion.
   - Added unit tests for completion scenarios (simple, inside block, shadowing).
   - Verified `cargo test` and `cargo clippy` pass.
+
+## Phase 10: DSL Refinement (Completed)
+
+- **Feature**: Improved ergonomics for `define_language!` macro.
+- **Implementation**:
+  - Refactored `define_language!` to use "TT Muncher" pattern.
+  - Added `binding_pass = simple("kw")` and `reference_pass = simple` syntax.
+- **Verification**:
+  - Updated `repl` and `scoping_demo` examples to use the new syntax.
+  - Verified backward compatibility with existing tests.

@@ -1,9 +1,4 @@
-use mcparse::{
-    define_language,
-    lexer::lex,
-    scoping::{SimpleBindingPass, SimpleReferencePass, scope_tokens},
-    token::TokenTree,
-};
+use mcparse::{define_language, lexer::lex, scoping::scope_tokens, token::TokenTree};
 
 // --- Language ---
 
@@ -19,8 +14,8 @@ define_language! {
     delimiters = [
         delimiter "brace" = "{", "}",
     ];
-    binding_pass = SimpleBindingPass::new("let");
-    reference_pass = SimpleReferencePass;
+    binding_pass = simple("let");
+    reference_pass = simple;
 }
 
 fn print_tree(tree: &TokenTree, indent: usize) {

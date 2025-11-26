@@ -209,10 +209,11 @@ impl<M: Matcher> Shape for Term<M> {
         // Skip whitespace
         while let Some(tree) = current_stream.first() {
             if let TokenTree::Token(token) = tree
-                && token.kind == AtomKind::Whitespace {
-                    current_stream = current_stream.advance(1);
-                    continue;
-                }
+                && token.kind == AtomKind::Whitespace
+            {
+                current_stream = current_stream.advance(1);
+                continue;
+            }
             break;
         }
 
@@ -252,13 +253,14 @@ impl<M: Matcher> Shape for Term<M> {
         // Skip whitespace
         while let Some(tree) = current_stream.first() {
             if let TokenTree::Token(token) = tree
-                && token.kind == AtomKind::Whitespace {
-                    if token.location.contains(cursor) {
-                        return self.0.suggest_insertion();
-                    }
-                    current_stream = current_stream.advance(1);
-                    continue;
+                && token.kind == AtomKind::Whitespace
+            {
+                if token.location.contains(cursor) {
+                    return self.0.suggest_insertion();
                 }
+                current_stream = current_stream.advance(1);
+                continue;
+            }
             break;
         }
 
@@ -455,40 +457,43 @@ impl<S: Shape> Shape for Enter<S> {
 
         while let Some(tree) = current_stream.first() {
             if let TokenTree::Token(token) = tree
-                && token.kind == AtomKind::Whitespace {
-                    current_stream = current_stream.advance(1);
-                    continue;
-                }
+                && token.kind == AtomKind::Whitespace
+            {
+                current_stream = current_stream.advance(1);
+                continue;
+            }
             break;
         }
 
         if let Some(TokenTree::Delimited(d, content, loc, _)) = current_stream.first()
-            && d.kind == self.0.kind {
-                // 2. Create new stream from content
-                let inner_stream = TokenStream::new(content);
+            && d.kind == self.0.kind
+        {
+            // 2. Create new stream from content
+            let inner_stream = TokenStream::new(content);
 
-                // 3. Match inner
-                let (res, remaining_inner) = self.1.match_shape(inner_stream, context)?;
+            // 3. Match inner
+            let (res, remaining_inner) = self.1.match_shape(inner_stream, context)?;
 
-                // 4. Ensure inner consumed everything (Implicit Exit/End)
-                let mut check_stream = remaining_inner;
-                while let Some(tree) = check_stream.first() {
-                    if let TokenTree::Token(token) = tree
-                        && token.kind == AtomKind::Whitespace {
-                            check_stream = check_stream.advance(1);
-                            continue;
-                        }
-                    // Found non-whitespace, so inner didn't consume everything
-                    let span = match tree {
-                        TokenTree::Token(t) => t.location.span,
-                        TokenTree::Delimited(_, _, loc, _) => loc.span,
-                        _ => loc.span, // Fallback
-                    };
-                    return Err(ParseError::new(span, "Expected end of group".into()));
+            // 4. Ensure inner consumed everything (Implicit Exit/End)
+            let mut check_stream = remaining_inner;
+            while let Some(tree) = check_stream.first() {
+                if let TokenTree::Token(token) = tree
+                    && token.kind == AtomKind::Whitespace
+                {
+                    check_stream = check_stream.advance(1);
+                    continue;
                 }
-
-                return Ok((res, current_stream.advance(1)));
+                // Found non-whitespace, so inner didn't consume everything
+                let span = match tree {
+                    TokenTree::Token(t) => t.location.span,
+                    TokenTree::Delimited(_, _, loc, _) => loc.span,
+                    _ => loc.span, // Fallback
+                };
+                return Err(ParseError::new(span, "Expected end of group".into()));
             }
+
+            return Ok((res, current_stream.advance(1)));
+        }
 
         let span = if let Some(TokenTree::Token(t)) = current_stream.first() {
             t.location.span
@@ -512,19 +517,21 @@ impl<S: Shape> Shape for Enter<S> {
         // Skip whitespace
         while let Some(tree) = current_stream.first() {
             if let TokenTree::Token(token) = tree
-                && token.kind == AtomKind::Whitespace {
-                    current_stream = current_stream.advance(1);
-                    continue;
-                }
+                && token.kind == AtomKind::Whitespace
+            {
+                current_stream = current_stream.advance(1);
+                continue;
+            }
             break;
         }
 
         if let Some(TokenTree::Delimited(d, content, loc, _)) = current_stream.first()
             && d.kind == self.0.kind
-                && loc.contains(cursor) {
-                    let inner_stream = TokenStream::new(content);
-                    return self.1.complete(inner_stream, context, cursor);
-                }
+            && loc.contains(cursor)
+        {
+            let inner_stream = TokenStream::new(content);
+            return self.1.complete(inner_stream, context, cursor);
+        }
         vec![]
     }
 }
@@ -549,12 +556,13 @@ impl<A: Shape, B: Shape> Shape for Adjacent<A, B> {
 
         // Check for whitespace at the start of stream_after_a
         if let Some(TokenTree::Token(token)) = stream_after_a.first()
-            && token.kind == AtomKind::Whitespace {
-                return Err(ParseError::new(
-                    token.location.span,
-                    "Unexpected whitespace".into(),
-                ));
-            }
+            && token.kind == AtomKind::Whitespace
+        {
+            return Err(ParseError::new(
+                token.location.span,
+                "Unexpected whitespace".into(),
+            ));
+        }
 
         let (res_b, stream_after_b) = self.1.match_shape(stream_after_a, context)?;
         Ok((TokenTree::Group(vec![res_a, res_b]), stream_after_b))
@@ -598,10 +606,11 @@ impl Shape for End {
         let mut current_stream = stream;
         while let Some(tree) = current_stream.first() {
             if let TokenTree::Token(token) = tree
-                && token.kind == AtomKind::Whitespace {
-                    current_stream = current_stream.advance(1);
-                    continue;
-                }
+                && token.kind == AtomKind::Whitespace
+            {
+                current_stream = current_stream.advance(1);
+                continue;
+            }
             let span = match tree {
                 TokenTree::Token(t) => t.location.span,
                 TokenTree::Delimited(_, _, loc, _) => loc.span,

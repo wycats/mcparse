@@ -70,10 +70,11 @@
 - [x] Implement intelligent Tab Completion for variables using `ScopeStack`.
 - [x] Enhance `VariableRules` with context (delimiter stack).
 
-## Phase 10: DSL Refinement
+## Phase 10: DSL Refinement (Completed)
 
-- [ ] Implement `define_language!` as a procedural macro.
-- [ ] Implement declarative atom syntax (regex-like).
+- [x] Implement `define_language!` as a procedural macro (Decided to use TT Muncher in `macro_rules!` instead).
+- [x] Implement declarative atom syntax (regex-like). (Already done in Phase 5, refined here).
+- [x] Add convenience syntax for `binding_pass` and `reference_pass`.
 
 ## Phase 11: Incremental Scoping & Semantics
 

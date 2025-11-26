@@ -1,28 +1,22 @@
-# Phase 9: Scoping & Completion (Implementation Plan)
+# Phase 10: DSL Refinement (Outline)
 
 ## Goal
 
-Enhance the developer experience by implementing intelligent Tab Completion for variables in the REPL. This requires refining the `VariableRules` and `BindingPass` architecture to be fully robust and context-aware.
+Refine the Domain Specific Language (DSL) for defining languages in McParse to be more ergonomic and powerful.
 
-## Detailed Steps
+## Proposed Work
 
-### 1. Refactor `VariableRules`
+1.  **Procedural Macro for `define_language!`**:
 
-- Decouple `VariableRules` from the raw lexer.
-- Ensure it operates purely as a post-lexing pass on `TokenTree`.
-- Give it access to the delimiter stack (context) to handle complex binding patterns (e.g., `let (a, b)`).
+    - Investigate if `macro_rules!` limitations warrant a move to procedural macros.
+    - If so, implement `define_language!` as a proc-macro to allow for more flexible syntax and better error messages.
+    - If not, refine the existing `macro_rules!` to support more features (e.g., better validation).
 
-### 2. Implement Tab Completion
+2.  **Declarative Atom Syntax**:
 
-- Add a `complete` method to the `Language` trait (or a new `Completion` trait).
-- Implement logic to:
-  1.  Parse the current input (partial parse).
-  2.  Identify the cursor position in the `TokenTree`.
-  3.  Traverse the `ScopeStack` at that position.
-  4.  Return a list of available bindings.
-- Integrate this into the `repl` example.
+    - Enhance the declarative syntax for atoms (e.g., `atom Name = r"..."`) to support more complex patterns or constraints if needed.
+    - Consider adding support for "composed" atoms or shared regex patterns.
 
-### 3. Verify Scoping Logic
-
-- Add tests for block scoping, shadowing, and hoisting.
-- Ensure the `BindingPass` correctly handles unclosed delimiters (common during completion).
+3.  **Documentation**:
+    - Update the "Building a Language" guide to reflect the refined DSL.
+    - Add examples of advanced DSL usage.

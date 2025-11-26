@@ -1,9 +1,9 @@
 #![allow(clippy::collapsible_if)]
+use crate::atom::AtomKind;
 use crate::language::Language;
 use crate::scoping::ScopeStack;
-use crate::token::{Token, TokenTree};
-use crate::atom::AtomKind;
 use crate::shape::{CompletionItem, CompletionKind};
+use crate::token::{Token, TokenTree};
 
 pub fn find_completions(
     tokens: &[TokenTree],
@@ -11,10 +11,12 @@ pub fn find_completions(
     offset: usize,
 ) -> Vec<CompletionItem> {
     let mut scope = ScopeStack::new();
-    
+
     // Populate scope stack up to the cursor
-    language.binding_pass().collect_scope_at(tokens, offset, &mut scope);
-    
+    language
+        .binding_pass()
+        .collect_scope_at(tokens, offset, &mut scope);
+
     // Determine prefix to calculate delete_backwards
     let mut delete_backwards = 0;
     if let Some(token) = find_token_at_offset(tokens, offset) {
@@ -27,9 +29,9 @@ pub fn find_completions(
             }
         }
     }
-    
+
     let mut items = Vec::new();
-    
+
     // Add variables from scope
     for name in scope.names() {
         items.push(CompletionItem {
@@ -39,7 +41,7 @@ pub fn find_completions(
             delete_backwards,
         });
     }
-    
+
     items
 }
 
@@ -74,8 +76,8 @@ fn find_token_at_offset(tokens: &[TokenTree], offset: usize) -> Option<&Token> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mock::MockLanguage;
     use crate::lexer::lex;
+    use crate::mock::MockLanguage;
 
     #[test]
     fn test_completion_simple() {
@@ -83,10 +85,10 @@ mod tests {
         let input = "let x = 1; ";
         // Cursor at end
         let offset = input.len();
-        
+
         let tokens = lex(input, &lang);
         let completions = find_completions(&tokens, &lang, offset);
-        
+
         assert!(completions.iter().any(|c| c.label == "x"));
     }
 
@@ -99,23 +101,23 @@ mod tests {
         let input = "let x = 1; ( let y = 2; ";
         // Cursor at end, inside unclosed paren
         let offset = input.len();
-        
+
         let tokens = lex(input, &lang);
         let completions = find_completions(&tokens, &lang, offset);
-        
+
         assert!(completions.iter().any(|c| c.label == "x"));
         assert!(completions.iter().any(|c| c.label == "y"));
     }
-    
+
     #[test]
     fn test_completion_shadowing() {
         let lang = MockLanguage::new().with_keyword_binding("let");
         let input = "let x = 1; ( let x = 2; ";
         let offset = input.len();
-        
+
         let tokens = lex(input, &lang);
         let completions = find_completions(&tokens, &lang, offset);
-        
+
         let x_count = completions.iter().filter(|c| c.label == "x").count();
         assert!(x_count >= 1);
     }

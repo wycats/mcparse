@@ -1,39 +1,30 @@
-# Phase 9: Scoping & Completion (Walkthrough)
+# Phase 10: DSL Refinement (Walkthrough)
 
 ## Goal
 
-Enhance the developer experience by implementing intelligent Tab Completion for variables in the REPL.
+Improve the ergonomics of the `define_language!` macro, specifically for defining `binding_pass` and `reference_pass`.
 
 ## Changes
 
-### 1. Refactored `VariableRules`
+### 1. Refactored `define_language!` Macro
 
-- Confirmed that `VariableRules` has been fully replaced by `BindingPass` and `ReferencePass`.
-- Updated `DESIGN.md` to reflect the new architecture.
+- **Problem**: The `define_language!` macro used simple pattern matching which made it difficult to support optional arguments with different syntaxes (e.g., `simple("let")` vs `MyPass::new()`).
+- **Solution**: Refactored the macro to use a "TT Muncher" (Token Tree Muncher) pattern. This allows the macro to recursively parse the input token stream, handling options in any order and supporting flexible syntax.
+- **Implementation**:
+  - Added `@parse_options` rules to `src/macros.rs`.
+  - Implemented specific rules for `binding_pass = simple("kw")` and `reference_pass = simple`.
+  - Maintained backward compatibility for arbitrary expressions.
 
-### 2. Implemented `Language::complete`
+### 2. Updated Examples
 
-- Added `complete` method to `Language` trait.
-- Implemented `find_completions` helper in `src/completion.rs` that uses `BindingPass` to populate `ScopeStack` up to the cursor position.
-- Updated `BindingPass` trait to include `collect_scope_at` method for partial scope collection.
-- Implemented `collect_scope_at` for `SimpleBindingPass`.
-
-### 3. Unclosed Delimiter Handling
-
-- Updated `TokenTree::Delimited` to store `is_closed` boolean.
-- Updated `lexer` to populate this flag.
-- Updated `collect_scope_at` to correctly handle unclosed delimiters (treating the cursor as "inside" if the group is unclosed and extends to EOF).
-- Verified with tests in `src/completion.rs`.
-
-### 4. Updated REPL
-
-- Updated `examples/repl.rs` to use `Language::complete` for variable completion.
-- Merged variable completions with shape-based completions (keywords).
-- Updated `MiniScriptLang` to use `SimpleBindingPass` and `SimpleReferencePass`.
+- Updated `examples/repl.rs` to use the new convenience syntax:
+  ```rust
+  binding_pass = simple("let");
+  reference_pass = simple;
+  ```
+- Updated `examples/scoping_demo.rs` similarly.
 
 ## Key Decisions
 
-- **Explicit `is_closed` flag**: We added a boolean to `TokenTree::Delimited` to distinguish between closed groups (where the cursor must be strictly inside) and unclosed groups (where the cursor at EOF is considered inside). This is crucial for completion while typing.
-- **`collect_scope_at`**: We added a method to `BindingPass` to allow "pausing" the binding analysis at a specific offset. This avoids the need to re-implement the binding logic just for completion.
+- **TT Muncher for Options**: We chose to use the TT Muncher pattern for parsing macro options. This is a standard technique in Rust macros for handling complex, unordered, or optional arguments. It provides greater flexibility than fixed pattern matching and allows us to introduce "syntactic sugar" like `simple(...)` without breaking existing code.
 
-```

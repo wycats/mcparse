@@ -247,8 +247,8 @@ define_language! {
             close: ")",
         },
     ];
-    binding_pass = mcparse::scoping::SimpleBindingPass::new("let");
-    reference_pass = mcparse::scoping::SimpleReferencePass;
+    binding_pass = simple("let");
+    reference_pass = simple;
 }
 
 // --- Matchers ---
@@ -407,9 +407,9 @@ impl App {
         use mcparse::shape::NoOpMatchContext;
         let mut context = NoOpMatchContext;
         let shape_completions = MiniScriptShape.complete(stream, &mut context, self.cursor_pos);
-        
+
         self.completions.extend(shape_completions);
-        
+
         // Deduplicate based on label
         self.completions.sort_by(|a, b| a.label.cmp(&b.label));
         self.completions.dedup_by(|a, b| a.label == b.label);

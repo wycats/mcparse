@@ -61,7 +61,12 @@ fn lex_group<'a>(
                         SourceSpan::new(start_offset.into(), end_cursor.offset - start_offset);
                     let location = SourceLocation { span };
 
-                    trees.push(TokenTree::Delimited(delim.clone(), inner_trees, location, true));
+                    trees.push(TokenTree::Delimited(
+                        delim.clone(),
+                        inner_trees,
+                        location,
+                        true,
+                    ));
                     cursor = end_cursor;
                     continue 'outer;
                 } else {
@@ -70,7 +75,12 @@ fn lex_group<'a>(
                     let span =
                         SourceSpan::new(start_offset.into(), next_cursor.offset - start_offset);
                     let location = SourceLocation { span };
-                    trees.push(TokenTree::Delimited(delim.clone(), inner_trees, location, false));
+                    trees.push(TokenTree::Delimited(
+                        delim.clone(),
+                        inner_trees,
+                        location,
+                        false,
+                    ));
 
                     cursor = next_cursor;
                     // We continue, but likely next_cursor is at EOF or a mismatched closer, so the loop will handle it.

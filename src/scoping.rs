@@ -70,7 +70,12 @@ pub trait BindingPass: Debug + Send + Sync {
 
     /// Scans the token stream to build the scope stack at a specific offset.
     /// Returns `true` if the offset was found within the tokens.
-    fn collect_scope_at(&self, tokens: &[TokenTree], offset: usize, scope: &mut ScopeStack) -> bool {
+    fn collect_scope_at(
+        &self,
+        tokens: &[TokenTree],
+        offset: usize,
+        scope: &mut ScopeStack,
+    ) -> bool {
         for token in tokens {
             match token {
                 TokenTree::Token(t) => {
@@ -211,7 +216,12 @@ impl BindingPass for SimpleBindingPass {
         }
     }
 
-    fn collect_scope_at(&self, tokens: &[TokenTree], offset: usize, scope: &mut ScopeStack) -> bool {
+    fn collect_scope_at(
+        &self,
+        tokens: &[TokenTree],
+        offset: usize,
+        scope: &mut ScopeStack,
+    ) -> bool {
         let mut i = 0;
         while i < tokens.len() {
             // Check if we hit the offset in the current token
@@ -253,14 +263,14 @@ impl BindingPass for SimpleBindingPass {
                     return false;
                 }
             }
-            
+
             // Handle Group recursion (transparent)
             if let TokenTree::Group(children) = current_token {
-                 if self.collect_scope_at(children, offset, scope) {
-                     return true;
-                 }
-                 i += 1;
-                 continue;
+                if self.collect_scope_at(children, offset, scope) {
+                    return true;
+                }
+                i += 1;
+                continue;
             }
 
             // Process bindings (same logic as identify_bindings but read-only)
