@@ -75,3 +75,15 @@ This file tracks key architectural and design decisions made throughout the proj
 - **Context**: The default "Play" button in `mdbook` points to the official Rust Playground, which cannot run code depending on local/unpublished crates like `mcparse`.
 - **Decision**: Disabled the `runnable` feature in `book.toml` but kept `copyable` enabled.
 - **Rationale**: This prevents a broken user experience where the "Play" button would inevitably fail, while still allowing users to copy code for local experimentation.
+
+### [2025-11-29] Declarative Atoms
+
+- **Context**: Defining `Atom` implementations manually (state machines) was too verbose for simple cases like keywords or regex patterns.
+- **Decision**: Introduced `RegexAtom` and `KeywordAtom` structs, and updated the `define_language!` macro to support a declarative syntax: `atom Name = r"..."` and `keyword "if"`.
+- **Rationale**: This drastically reduces boilerplate for the 90% use case while preserving the "escape hatch" of manual `Atom` implementation for complex tokens (like string interpolation).
+
+### [2025-11-29] Lexing-Time Binding
+
+- **Context**: We initially conflated variable binding with macro expansion, which led to confusion about scope and timing.
+- **Decision**: Clarified that variable binding is a strictly **lexing-time** property determined by `VariableRules`. Macros cannot dynamically introduce bindings; they can only manipulate tokens that were *already* marked as bindings by the lexer.
+- **Rationale**: This separation of concerns simplifies the mental model. The lexer handles "what is this?" (Binding vs Reference), and the parser/macros handle "what does this mean?" (Structure/Semantics). It also enables robust syntax highlighting without running the full parser.

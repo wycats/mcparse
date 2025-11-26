@@ -122,6 +122,8 @@ By classifying variables _during lexing_, we get:
 1.  **Syntax Highlighting**: We can color declarations differently from usages immediately, even if the code is syntactically invalid later on.
 2.  **Robustness**: The parser knows `x` is a binding in `let x = ...` without needing to fully parse the statement.
 
+> **Note**: Because this happens during lexing, macros cannot change whether an identifier is a binding or not. The classification is static.
+
 ## Registering Macros
 
 Finally, we add the macro and variable rules to our `Language` definition.

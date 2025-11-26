@@ -1,17 +1,11 @@
-# Phase 4 Task List
+- [x] Document Contextual Keywords and Backwards Compatibility
+- [x] Design "Declarative with Escape Hatches" approach
+- [x] Implement `RegexAtom` and `KeywordAtom`
+- [x] Implement `LiteralAtom`
+- [x] Update `define_language!` for literals and simplified delimiters
+- [x] Update Quick Start guide
+- [x] Update JSON tutorial
+- [x] Verify all tests pass
+- [x] Fix regressions in examples
+- [x] Refine Documentation based on User Feedback (Macros & Bindings)
 
-- [x] Set up `mdbook` skeleton.
-- [x] **Review**: Check the book structure and outline.
-- [x] Write "Introduction & Philosophy" chapter.
-- [x] Write "Tutorial: JSON Parser" chapter.
-- [ ] **Review**: Check the JSON tutorial.
-- [x] Write "Tutorial: Scripting Language" chapter.
-- [x] Write "Advanced Topics" chapter.
-- [x] Write "Reference" section.
-- [x] **Review**: Check the Scripting tutorial, Advanced Topics, and Reference.
-- [x] Write "Core Concepts" chapter.
-- [x] Write "Quick Start" chapter.
-- [x] Write "Cookbook" section.
-- [x] **Review**: Check the new chapters.
-- [x] Polish API documentation (`cargo doc`).
-- [x] Verify code blocks in mdbook.

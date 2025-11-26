@@ -1,40 +1,23 @@
-# Implementation Plan: Phase 4 - Documentation & Guides
+# Implementation Plan - Phase 5: API Refinement & Ergonomics
 
-## Goal
+This phase focuses on refining the API surface to be more intuitive and "magical" while maintaining full composability. We want to bridge the gap between "easy" regex-like definitions and "hard" custom implementations without creating a cliff.
 
-Create comprehensive documentation for McParse to make it accessible and easy to use. This involves setting up a "Book" with tutorials and guides, and ensuring the API documentation is polished.
+## Goals
 
-## Detailed Steps
+1.  **Declarative Atom Syntax**: Implement a way to define Atoms using regex or simple rules (e.g., for whitespace, identifiers) that compiles down to the standard `Atom` trait.
+2.  **Seamless Composition**: Ensure that declarative atoms can be mixed freely with custom `Atom` implementations.
+3.  **Reduce Boilerplate**: Simplify the `Language` trait implementation for common cases.
+4.  **Documentation Update**: Add a "Custom Implementation" tutorial to the book to show *why* and *how* to drop down to the lower level.
 
-### 1. Setup MdBook
+## Proposed Steps
 
-- **Task**: Initialize the documentation site.
-- **Details**:
-  - Install `mdbook` (if not present, or just use the binary).
-  - Initialize `docs/book` structure.
-  - Configure `book.toml`.
-  - Set up a GitHub Action (or just a script) to build/deploy (optional for now).
-
-### 2. "The McParse Book" Content
-
-- **Introduction & Philosophy**:
-  - Explain the "Shape Algebra" and "Atomic Lexing" concepts.
-  - Explain why this approach is better than Regex or Parser Combinators for IDEs.
-- **Tutorial: JSON Parser**:
-  - Walk through building a JSON parser from scratch.
-  - Cover: Defining Atoms, Shapes, and handling delimiters.
-- **Tutorial: Scripting Language**:
-  - Walk through building "MiniScript" (or similar).
-  - Cover: Macros, Variable Binding, Hygiene, and Expressions.
-- **Advanced Topics**:
-  - Deep dive into Error Recovery.
-  - Deep dive into Incremental Parsing (conceptual).
-  - Deep dive into Custom Shapes.
-
-### 3. API Documentation
-
-- **Task**: Polish Rustdoc comments.
-- **Details**:
-  - Ensure all public items in `src/lib.rs`, `src/shape.rs`, `src/atom.rs`, etc., have doc comments.
-  - Add examples to doc comments where appropriate (doctests).
-  - Run `cargo doc --open` to verify the output.
+1.  **Design**: Refine the `define_language!` macro design in `docs/design/ergonomics.md` to support mixed declarative/custom atoms.
+2.  **Implementation**:
+    - Add `regex` dependency (if not present) or use a lightweight alternative.
+    - Implement a `RegexAtom` struct that implements `Atom`.
+    - Create/Update `define_language!` macro to support `atom Name = r"..."` syntax.
+3.  **Verification**: Refactor `JsonPlus` example to use the new declarative syntax where appropriate, keeping custom logic where necessary.
+4.  **Documentation**:
+    - Update the "JSON Parser" tutorial to use the new syntax.
+    - Create a new "Advanced: Custom Atoms" tutorial explaining the manual implementation.
+5.  **Contextual Keywords**: Document how to add keywords backwards-compatibly using custom `VariableRules`.

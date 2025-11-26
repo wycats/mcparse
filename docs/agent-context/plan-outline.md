@@ -38,20 +38,28 @@
   - Advanced Topics: Macros, Hygiene, Error Recovery.
 - [x] Generate API documentation (`cargo doc`).
 
-## Phase 5: API Refinement & Ergonomics
+## Phase 5: API Refinement & Ergonomics (Completed)
 
-- [ ] Review API surface based on documentation experience.
-- [ ] Design declarative syntax for Atoms (e.g., regex-like but constraint-aware).
-- [ ] Simplify boilerplate for common patterns (Whitespace, Identifiers).
-- [ ] Evaluate `define_atom!` and `define_language!` macros for improvements.
+- [x] Review API surface based on documentation experience.
+- [x] Design declarative syntax for Atoms (e.g., regex-like but constraint-aware).
+- [x] Simplify boilerplate for common patterns (Whitespace, Identifiers).
+- [x] Evaluate `define_atom!` and `define_language!` macros for improvements.
 
-## Phase 6: Incremental Parsing Implementation
+## Phase 6: Variable Binding & Scoping Architecture
+
+- [ ] Design the `BindingPass` and `ReferencePass` traits.
+- [ ] Refactor `VariableRules` to operate on `TokenTree` (post-lexing).
+- [ ] Implement block-based scoping logic.
+- [ ] Update Macro Expansion to respect pre-calculated bindings.
+- [ ] Verify context-free syntax constraints.
+
+## Phase 7: Incremental Parsing Implementation
 
 - [ ] Implement Red/Green Tree data structures.
 - [ ] Implement Tree-Based Invalidation logic.
 - [ ] Implement Conservative Re-lexing.
 
-## Phase 7: Advanced Features & Ecosystem
+## Phase 8: Advanced Features & Ecosystem
 
 - [ ] Declarative Macro Syntax.
 - [ ] Gradual Typing Syntax exploration.

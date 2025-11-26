@@ -41,3 +41,14 @@
   - Integrated `mermaid.js` for diagrams.
   - Improved error reporting with `miette`.
   - Configured `mdbook` for local development (disabled broken Playground link).
+
+## Phase 5: API Refinement & Ergonomics (Completed)
+
+- **Declarative Atoms**: Implemented `RegexAtom`, `KeywordAtom`, and `LiteralAtom` to simplify language definitions.
+- **Macro Syntax**: Updated `define_language!` to support a concise, declarative syntax for atoms and keywords (`atom Name = r"..."`, `keyword "if"`).
+- **Documentation**:
+  - Added "Custom Atoms" chapter explaining the escape hatch for manual atom implementation.
+  - Updated "Contextual Keywords" chapter to clarify the interaction between atomic lexing and macro expansion.
+  - Explicitly documented the "Lexing-Time Binding" constraint.
+- **Examples**: Refactored `json_plus.rs` and `miniscript.rs` to use the new ergonomic syntax, reducing boilerplate significantly.
+- **Verification**: Verified all book examples and unit tests pass with the new API.
