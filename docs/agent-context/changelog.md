@@ -27,3 +27,17 @@
 - **Error Reporting**: Created `examples/miniscript_errors.rs` demonstrating rich error diagnostics with `miette`.
 - **Incremental Design**: Completed the design for Incremental Parsing (`docs/design/incremental-parsing.md`) using Red/Green trees.
 - **Deferred**: Implementation of Incremental Parsing moved to Phase 5 to prioritize Documentation.
+
+## Phase 4: Documentation & Guides (Completed)
+
+- **The McParse Book**: Created a comprehensive guide using `mdbook` covering:
+  - Core Concepts (Pipeline, Shape Algebra).
+  - Tutorials (JSON Parser, Scripting Language).
+  - Advanced Topics (Error Recovery, Incrementalism).
+  - Cookbook & Reference.
+- **Doc Testing**: Implemented a robust strategy to test book examples via `src/lib.rs` doctests.
+- **API Docs**: Polished Rustdoc comments for the public API (`Shape`, `Atom`, `Token`).
+- **Developer Experience**:
+  - Integrated `mermaid.js` for diagrams.
+  - Improved error reporting with `miette`.
+  - Configured `mdbook` for local development (disabled broken Playground link).

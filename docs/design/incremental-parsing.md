@@ -27,10 +27,12 @@ We can view our `TokenTree` as a "Green Tree" (immutable, structurally shared).
 Because our lexer is "atomic" (it parses atoms and delimiters), we can re-lex a substring.
 
 **Challenge**: Context sensitivity.
+
 - If I type `/*` inside a block, it might comment out the rest of the file, invalidating everything after it.
 - If I type `}` inside a block, it might close the block early.
 
 **Solution**: Conservative Re-lexing.
+
 1.  Identify the "governing delimiter" of the edit.
 2.  Re-lex the entire content of that delimiter group.
 3.  Compare the new tokens with the old tokens.
@@ -74,13 +76,14 @@ struct TokenTree {
 **Question**: If a macro definition changes, all usages need re-expansion. What are our options?
 
 **Analysis**:
+
 1.  **Global Invalidation (Simplest)**: If the set of defined macros changes (e.g., user edits a `macro_rules!` block), we invalidate the entire file's parse state. Macro definitions are relatively rare compared to macro usages.
 2.  **Dependency Tracking (Advanced)**: We could track which nodes invoked which macros.
     - Map: `MacroName -> Vec<NodeId>` (Usages).
     - If `MacroName` changes, we invalidate only the specific `NodeId`s in that list.
-    - **Challenge**: If the macro definition changes *how* it parses arguments, the "usage" node itself might change boundaries.
+    - **Challenge**: If the macro definition changes _how_ it parses arguments, the "usage" node itself might change boundaries.
 
-**Recommendation**: Start with **Global Invalidation** for macro *definitions*. For macro *usages* (editing the arguments passed to a macro), we can use the standard incremental re-lexing strategy (re-expand just that invocation).
+**Recommendation**: Start with **Global Invalidation** for macro _definitions_. For macro _usages_ (editing the arguments passed to a macro), we can use the standard incremental re-lexing strategy (re-expand just that invocation).
 
 ### Text Range Mapping
 
@@ -90,8 +93,9 @@ struct TokenTree {
 The standard solution is the **Red/Green Tree** split.
 
 1.  **Green Tree (Internal, Storage)**:
+
     - Nodes are immutable and structurally shared.
-    - Nodes store their **Length** (width in bytes), but *not* their absolute offset.
+    - Nodes store their **Length** (width in bytes), but _not_ their absolute offset.
     - This allows a node representing `1 + 1` to be reused anywhere in the code without changing its internal data.
 
 2.  **Red Tree (API, Cursor)**:
@@ -102,6 +106,7 @@ The standard solution is the **Red/Green Tree** split.
 
 **Algorithm for Offset Mapping**:
 To find the node at offset `X`:
+
 1.  Start at the Root (Red Node, offset 0).
 2.  Iterate through the children (Green Nodes).
 3.  Keep a running `current_offset`.
@@ -111,6 +116,7 @@ To find the node at offset `X`:
 
 **Benefit: Efficient Range Queries**:
 Yes, this approach means we can trivially ask for a range and it is computed efficiently on demand.
+
 - **Green Nodes** don't know their position, so they can be shared.
 - **Red Nodes** are created only when you traverse to them. As you traverse, you accumulate the offset.
 - Once you hold a **Red Node**, asking for its absolute range is `O(1)` (it stores the start offset, and looks up the length from the Green Node).

@@ -4,6 +4,9 @@ use crate::r#macro::{ExpansionResult, MacroContext};
 use crate::shape::{Associativity, MatchContext, MatchResult, ParseError, Precedence};
 use crate::token::{TokenStream, TokenTree};
 
+/// The main parser struct.
+/// It drives the parsing process by consuming tokens from a `TokenStream`
+/// and applying the rules defined by the `Language`.
 pub struct Parser<'a, L: Language> {
     #[allow(dead_code)] // stream in struct might be used for initial entry point
     stream: TokenStream<'a>,
@@ -11,10 +14,13 @@ pub struct Parser<'a, L: Language> {
 }
 
 impl<'a, L: Language> Parser<'a, L> {
+    /// Creates a new parser for the given token stream and language.
     pub fn new(stream: TokenStream<'a>, language: &'a L) -> Self {
         Self { stream, language }
     }
 
+    /// Parses the entire stream into a single `TokenTree`.
+    /// This is the main entry point for parsing.
     pub fn parse(&mut self) -> Result<TokenTree, String> {
         let (tree, _) = self
             .parse_expression(self.stream.clone(), Precedence(0))
@@ -22,17 +28,18 @@ impl<'a, L: Language> Parser<'a, L> {
         Ok(tree)
     }
 
+    /// Parses the "head" of an expression.
+    /// This handles prefix macros and simple terms.
     fn parse_head<'s>(&mut self, stream: TokenStream<'s>) -> MatchResult<'s> {
         let mut current_stream = stream;
 
         // Skip whitespace
         while let Some(tree) = current_stream.first() {
-            if let TokenTree::Token(token) = tree {
-                if token.kind == AtomKind::Whitespace {
+            if let TokenTree::Token(token) = tree
+                && token.kind == AtomKind::Whitespace {
                     current_stream = current_stream.advance(1);
                     continue;
                 }
-            }
             break;
         }
 
@@ -57,7 +64,7 @@ impl<'a, L: Language> Parser<'a, L> {
                     match mac.expand(args, None, &context) {
                         ExpansionResult::Ok(expanded) => return Ok((expanded, next_stream)),
                         ExpansionResult::Error(msg) => {
-                            return Err(ParseError::new((0, 0).into(), msg))
+                            return Err(ParseError::new((0, 0).into(), msg));
                         }
                     }
                 }
@@ -87,12 +94,11 @@ impl<'a, L: Language> MatchContext for Parser<'a, L> {
             // Peek at next token (skipping whitespace)
             let mut peek_stream = current_stream.clone();
             while let Some(tree) = peek_stream.first() {
-                if let TokenTree::Token(token) = tree {
-                    if token.kind == AtomKind::Whitespace {
+                if let TokenTree::Token(token) = tree
+                    && token.kind == AtomKind::Whitespace {
                         peek_stream = peek_stream.advance(1);
                         continue;
                     }
-                }
                 break;
             }
 
@@ -136,9 +142,7 @@ impl<'a, L: Language> MatchContext for Parser<'a, L> {
                     ExpansionResult::Ok(expanded) => {
                         lhs = expanded;
                     }
-                    ExpansionResult::Error(msg) => {
-                        return Err(ParseError::new((0, 0).into(), msg))
-                    }
+                    ExpansionResult::Error(msg) => return Err(ParseError::new((0, 0).into(), msg)),
                 }
             } else {
                 break;

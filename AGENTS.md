@@ -51,7 +51,7 @@ When starting a phase in a new chat, you should restore the project context by f
 
 - **Completion Check**: Before marking a phase as complete in `docs/agent-context/current/task-list.md`, ensure all related tasks are done.
 - **Meta-Review**: Update `AGENTS.md` with any new instructions or changes in workflow. If something didn't work well in this phase, fix the process now.
-- **Verification**: Run `pnpm test` and `pnpm lint` to verify everything is in order.
+- **Verification**: Run `cargo test` and `cargo clippy` to verify everything is in order.
 - **Coherence Check**: Verify that coherence between the documentation and codebase is increasing. If necessary, update documentation to reflect recent changes or surface any new gaps between the intent of the system as documented, the planning documents, and the actual implementation.
 - **Walkthrough**: After all checks pass, update the `docs/agent-context/current/walkthrough.md` file to reflect the work done since the last phase transition and surface it to the user for review. Include a summary of the most important or controversial changes made that the user has not yet reviewed. Wait for the user to review the walkthrough and approve it before proceeding. This step may involve a back-and-forth with the user to ensure they understand and approve the changes made during the phase, and may even require doing additional implementation work if the user identifies gaps or issues that need to be addressed before the phase can be considered complete.
 - **Finalize**: Once the user has approved the walkthrough:

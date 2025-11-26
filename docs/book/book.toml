@@ -1,0 +1,18 @@
+[book]
+authors = ["Yehuda Katz"]
+language = "en"
+multilingual = false
+src = "src"
+title = "The McParse Book"
+
+[output.html]
+git-repository-url = "https://github.com/wycats/mcparse"
+edit-url-template = "https://github.com/wycats/mcparse/edit/main/docs/book/{path}"
+additional-js = ["js/mermaid.min.js", "js/mermaid-init.js"]
+
+[output.html.playground]
+runnable = false
+copyable = true
+
+
+

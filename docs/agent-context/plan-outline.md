@@ -28,23 +28,30 @@
 - [x] Design Incremental Parsing strategy.
 - [x] Implement Incremental Parsing and re-lexing (Moved to Phase 5).
 
-## Phase 4: Documentation & Guides
+## Phase 4: Documentation & Guides (Completed)
 
-- [ ] Set up `mdbook` for the project.
-- [ ] Write "The McParse Book":
+- [x] Set up `mdbook` for the project.
+- [x] Write "The McParse Book":
   - Introduction & Philosophy.
   - Tutorial: Building a JSON Parser.
   - Tutorial: Building a Scripting Language.
   - Advanced Topics: Macros, Hygiene, Error Recovery.
-- [ ] Generate API documentation (`cargo doc`).
+- [x] Generate API documentation (`cargo doc`).
 
-## Phase 5: Incremental Parsing Implementation
+## Phase 5: API Refinement & Ergonomics
+
+- [ ] Review API surface based on documentation experience.
+- [ ] Design declarative syntax for Atoms (e.g., regex-like but constraint-aware).
+- [ ] Simplify boilerplate for common patterns (Whitespace, Identifiers).
+- [ ] Evaluate `define_atom!` and `define_language!` macros for improvements.
+
+## Phase 6: Incremental Parsing Implementation
 
 - [ ] Implement Red/Green Tree data structures.
 - [ ] Implement Tree-Based Invalidation logic.
 - [ ] Implement Conservative Re-lexing.
 
-## Phase 6: Advanced Features & Ecosystem
+## Phase 7: Advanced Features & Ecosystem
 
 - [ ] Declarative Macro Syntax.
 - [ ] Gradual Typing Syntax exploration.

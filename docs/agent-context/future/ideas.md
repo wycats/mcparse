@@ -1,0 +1,1 @@
+- **Declarative Atom Syntax**: The current `define_atom!` macro is powerful but verbose for simple cases like Whitespace or Identifiers. We should explore a declarative syntax that is concise (like regex) but still captures the necessary constraints for the lexer (e.g., `kind`, `highlight`).

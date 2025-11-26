@@ -48,7 +48,7 @@ This file tracks key architectural and design decisions made throughout the proj
 
 ### [2025-11-27] Structured Parse Errors
 
-- **Context**: The `Shape` trait originally returned `Result<T, ()>`, which meant parse failures carried no information about *what* was expected.
+- **Context**: The `Shape` trait originally returned `Result<T, ()>`, which meant parse failures carried no information about _what_ was expected.
 - **Decision**: Refactored `Shape` to return `Result<T, ParseError>`. Added `Matcher::describe()` to allow shapes to self-document their expectations (e.g., "Expected Identifier").
 - **Rationale**: This enables the parser to generate rich, user-friendly error messages automatically without requiring the grammar writer to manually instrument every failure point.
 
@@ -63,3 +63,15 @@ This file tracks key architectural and design decisions made throughout the proj
 - **Context**: When a user edits the source code, we need to determine which parts of the parse tree are invalid.
 - **Decision**: Edits will be mapped to the deepest containing node in the Green Tree. That node and its ancestors are invalidated. We will re-lex the content of the invalidated node and attempt to splice new tokens in.
 - **Rationale**: This provides a coarse-grained but robust invalidation strategy that leverages the hierarchical structure of the code (e.g., re-parsing just a single function body) without complex state tracking.
+
+### [2025-11-28] Documentation-Driven Testing
+
+- **Context**: We needed a way to ensure that the code examples in "The McParse Book" remain correct and compile as the library evolves.
+- **Decision**: Integrated book chapters directly into the crate's test suite using `#[doc = include_str!("...")]` in `src/lib.rs`.
+- **Rationale**: This treats documentation as code, ensuring that `cargo test` verifies the examples. It avoids the need for complex external tooling or fragile shell scripts to extract and run code blocks.
+
+### [2025-11-28] Playground Configuration
+
+- **Context**: The default "Play" button in `mdbook` points to the official Rust Playground, which cannot run code depending on local/unpublished crates like `mcparse`.
+- **Decision**: Disabled the `runnable` feature in `book.toml` but kept `copyable` enabled.
+- **Rationale**: This prevents a broken user experience where the "Play" button would inevitably fail, while still allowing users to copy code for local experimentation.

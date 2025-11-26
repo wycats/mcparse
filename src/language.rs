@@ -1,4 +1,4 @@
-use crate::atom::{Atom, AtomKind, VariableRole};
+pub use crate::atom::{Atom, AtomKind, VariableRole};
 use crate::r#macro::Macro;
 use crate::token::Token;
 use std::fmt::Debug;
@@ -14,6 +14,15 @@ pub trait VariableRules: Debug + Send + Sync {
     /// Classifies an identifier token as a Binding, Reference, or None based on the previous token.
     /// This allows for context-sensitive lexing (e.g., "let x" vs "x = 1").
     fn classify(&self, previous_token: Option<&Token>, current_token: &Token) -> VariableRole;
+}
+
+#[derive(Debug, Default)]
+pub struct NoOpVariableRules;
+
+impl VariableRules for NoOpVariableRules {
+    fn classify(&self, _previous_token: Option<&Token>, _current_token: &Token) -> VariableRole {
+        VariableRole::None
+    }
 }
 
 #[derive(Debug, Default)]
@@ -38,13 +47,11 @@ impl VariableRules for PatternVariableRules {
             return VariableRole::None;
         }
 
-        if let Some(prev) = previous_token {
-            if let AtomKind::Keyword(ref k) = prev.kind {
-                if self.bind_after_keywords.contains(k) {
+        if let Some(prev) = previous_token
+            && let AtomKind::Keyword(ref k) = prev.kind
+                && self.bind_after_keywords.contains(k) {
                     return VariableRole::Binding;
                 }
-            }
-        }
 
         VariableRole::Reference
     }

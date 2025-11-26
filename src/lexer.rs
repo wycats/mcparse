@@ -26,7 +26,7 @@ fn lex_group<'a>(
         let mut flush_unknown = |trees: &mut Vec<TokenTree>| {
             if let Some((start, text)) = pending_unknown.take() {
                 let len = text.len();
-                let span = SourceSpan::new(start.into(), len.into());
+                let span = SourceSpan::new(start.into(), len);
                 let location = SourceLocation { span };
                 trees.push(TokenTree::Token(Token {
                     kind: AtomKind::Other("Unknown".to_string()),
@@ -37,12 +37,11 @@ fn lex_group<'a>(
         };
 
         // 1. Check for terminator (close delimiter)
-        if let Some(term) = terminator {
-            if cursor.rest.starts_with(term.close) {
+        if let Some(term) = terminator
+            && cursor.rest.starts_with(term.close) {
                 flush_unknown(&mut trees);
                 return (trees, cursor);
             }
-        }
 
         // 2. Check for openers (delimiters)
         for delim in language.delimiters() {
@@ -58,7 +57,7 @@ fn lex_group<'a>(
                     let end_cursor = next_cursor.advance(delim.close.len());
                     let span = SourceSpan::new(
                         start_offset.into(),
-                        (end_cursor.offset - start_offset).into(),
+                        end_cursor.offset - start_offset,
                     );
                     let location = SourceLocation { span };
 
@@ -72,7 +71,7 @@ fn lex_group<'a>(
                     // This allows completion and partial parsing to work inside unclosed groups.
                     let span = SourceSpan::new(
                         start_offset.into(),
-                        (next_cursor.offset - start_offset).into(),
+                        next_cursor.offset - start_offset,
                     );
                     let location = SourceLocation { span };
                     trees.push(TokenTree::Delimited(delim.clone(), inner_trees, location));
@@ -125,7 +124,7 @@ fn lex_group<'a>(
     // Flush any remaining unknown text at EOF
     if let Some((start, text)) = pending_unknown {
         let len = text.len();
-        let span = SourceSpan::new(start.into(), len.into());
+        let span = SourceSpan::new(start.into(), len);
         let location = SourceLocation { span };
         trees.push(TokenTree::Token(Token {
             kind: AtomKind::Other("Unknown".to_string()),

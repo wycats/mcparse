@@ -2,12 +2,21 @@ use crate::atom::AtomKind;
 use crate::language::Delimiter;
 use miette::SourceSpan;
 
+/// Represents a location in the source code.
+/// Wraps `miette::SourceSpan` to provide location tracking.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SourceLocation {
     pub span: SourceSpan,
 }
 
 impl SourceLocation {
+    pub fn new(start: usize, len: usize) -> Self {
+        Self {
+            span: (start, len).into(),
+        }
+    }
+
+    /// Checks if the given offset is contained within this location.
     pub fn contains(&self, offset: usize) -> bool {
         let start = self.span.offset();
         let end = start + self.span.len();
@@ -21,6 +30,16 @@ pub struct Token {
     pub kind: AtomKind,
     pub text: String,
     pub location: SourceLocation,
+}
+
+impl Token {
+    pub fn new(kind: AtomKind, text: &str, offset: usize) -> Self {
+        Self {
+            kind,
+            text: text.to_string(),
+            location: SourceLocation::new(offset, text.len()),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -56,6 +75,8 @@ impl TokenTree {
     }
 }
 
+/// A cursor pointing to a specific position in the input string.
+/// Used by the lexer to track progress.
 #[derive(Debug, Clone, Copy)]
 pub struct Cursor<'a> {
     pub rest: &'a str,
@@ -78,6 +99,9 @@ impl<'a> Cursor<'a> {
     }
 }
 
+/// A stream of `TokenTree`s.
+/// This is the input to the parser and shapes.
+/// It is a lightweight slice over the token trees.
 #[derive(Debug, Clone)]
 pub struct TokenStream<'a> {
     pub trees: &'a [TokenTree],
