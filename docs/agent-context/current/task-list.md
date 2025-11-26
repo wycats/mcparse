@@ -1,11 +1,6 @@
-- [x] Document Contextual Keywords and Backwards Compatibility
-- [x] Design "Declarative with Escape Hatches" approach
-- [x] Implement `RegexAtom` and `KeywordAtom`
-- [x] Implement `LiteralAtom`
-- [x] Update `define_language!` for literals and simplified delimiters
-- [x] Update Quick Start guide
-- [x] Update JSON tutorial
-- [x] Verify all tests pass
-- [x] Fix regressions in examples
-- [x] Refine Documentation based on User Feedback (Macros & Bindings)
+- [ ] Design `BindingPass` and `ReferencePass` traits
+- [ ] Refactor `VariableRules` to operate on `TokenTree`
+- [ ] Implement block-based scoping logic
+- [ ] Update Macro Expansion to respect pre-calculated bindings
+- [ ] Verify context-free syntax constraints
 
