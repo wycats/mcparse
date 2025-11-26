@@ -29,11 +29,11 @@ The `BindingPass` traverses the `TokenTree` and marks tokens as bindings by sett
 # use std::fmt::Debug;
 # use mcparse::{token::TokenTree, scoping::ScopeStack};
 pub trait ReferencePass: Debug + Send + Sync {
-    fn resolve_references(&self, tokens: &mut [TokenTree], scope: &ScopeStack);
+    fn resolve_references(&self, tokens: &mut [TokenTree], scope: &mut ScopeStack);
 }
 ```
 
-The `ReferencePass` traverses the `TokenTree` and resolves references by looking them up in the `ScopeStack`. If a reference is found, it links the token to the corresponding binding.
+The `ReferencePass` traverses the `TokenTree` and resolves references by looking them up in the `ScopeStack`. If a reference is found, it links the token to the corresponding binding. Note that `scope` is mutable because the pass needs to register definitions as it encounters them (so subsequent references in the same scope can resolve to them).
 
 ## Execution Order
 

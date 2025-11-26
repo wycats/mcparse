@@ -7,7 +7,8 @@ Macros allow you to extend the language syntax dynamically.
 ```rust
 # use std::fmt::Debug;
 # use mcparse::{Shape, TokenTree, MacroContext, ExpansionResult};
-pub trait Macro: Debug {
+# use mcparse::shape::{Precedence, Associativity};
+pub trait Macro: Debug + Send + Sync {
     fn name(&self) -> &str;
     fn signature(&self) -> &dyn Shape;
     fn expand(
@@ -16,12 +17,19 @@ pub trait Macro: Debug {
         lhs: Option<TokenTree>,
         context: &MacroContext,
     ) -> ExpansionResult;
+
+    // Operator support
+    fn is_operator(&self) -> bool { false }
+    fn precedence(&self) -> Precedence { Precedence(0) }
+    fn associativity(&self) -> Associativity { Associativity::Left }
 }
 ```
 
 - `name`: The keyword that triggers the macro.
 - `signature`: The shape of the arguments following the keyword.
 - `expand`: The transformation logic.
+- `is_operator`: Whether this macro acts as an infix/postfix operator.
+- `precedence` / `associativity`: Configuration for operator precedence parsing.
 
 ## Expansion Result
 
