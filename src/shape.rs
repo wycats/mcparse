@@ -180,7 +180,7 @@ impl Matcher for &str {
 impl Matcher for Delimiter {
     fn matches(&self, tree: &TokenTree) -> bool {
         match tree {
-            TokenTree::Delimited(d, _, _) => d.kind == self.kind,
+            TokenTree::Delimited(d, _, _, _) => d.kind == self.kind,
             _ => false,
         }
     }
@@ -223,7 +223,7 @@ impl<M: Matcher> Shape for Term<M> {
 
             let (span, found) = match tree {
                 TokenTree::Token(t) => (t.location.span, t.kind.to_string()),
-                TokenTree::Delimited(d, _, loc) => (loc.span, format!("Delimiter {}", d.kind)),
+                TokenTree::Delimited(d, _, loc, _) => (loc.span, format!("Delimiter {}", d.kind)),
                 TokenTree::Group(_) => ((0, 0).into(), "Group".to_string()),
                 TokenTree::Error(_) => ((0, 0).into(), "Error".to_string()),
                 TokenTree::Empty => ((0, 0).into(), "Empty".to_string()),
@@ -272,7 +272,7 @@ impl<M: Matcher> Shape for Term<M> {
                         return self.0.suggest_insertion();
                     }
                 }
-                TokenTree::Delimited(_, _, loc) => {
+                TokenTree::Delimited(_, _, loc, _) => {
                     if loc.span.offset() >= cursor {
                         return self.0.suggest_insertion();
                     }
@@ -462,7 +462,7 @@ impl<S: Shape> Shape for Enter<S> {
             break;
         }
 
-        if let Some(TokenTree::Delimited(d, content, loc)) = current_stream.first()
+        if let Some(TokenTree::Delimited(d, content, loc, _)) = current_stream.first()
             && d.kind == self.0.kind {
                 // 2. Create new stream from content
                 let inner_stream = TokenStream::new(content);
@@ -481,7 +481,7 @@ impl<S: Shape> Shape for Enter<S> {
                     // Found non-whitespace, so inner didn't consume everything
                     let span = match tree {
                         TokenTree::Token(t) => t.location.span,
-                        TokenTree::Delimited(_, _, loc) => loc.span,
+                        TokenTree::Delimited(_, _, loc, _) => loc.span,
                         _ => loc.span, // Fallback
                     };
                     return Err(ParseError::new(span, "Expected end of group".into()));
@@ -519,7 +519,7 @@ impl<S: Shape> Shape for Enter<S> {
             break;
         }
 
-        if let Some(TokenTree::Delimited(d, content, loc)) = current_stream.first()
+        if let Some(TokenTree::Delimited(d, content, loc, _)) = current_stream.first()
             && d.kind == self.0.kind
                 && loc.contains(cursor) {
                     let inner_stream = TokenStream::new(content);
@@ -604,7 +604,7 @@ impl Shape for End {
                 }
             let span = match tree {
                 TokenTree::Token(t) => t.location.span,
-                TokenTree::Delimited(_, _, loc) => loc.span,
+                TokenTree::Delimited(_, _, loc, _) => loc.span,
                 _ => (0, 0).into(),
             };
             return Err(ParseError::new(span, "Expected end of input".into()));

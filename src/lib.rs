@@ -39,6 +39,7 @@
 
 pub mod atom;
 pub mod atoms;
+pub mod completion;
 pub mod highlighter;
 pub mod incremental;
 pub mod language;
@@ -54,7 +55,7 @@ pub mod token;
 
 pub use atom::{Atom, AtomKind};
 pub use highlighter::{HighlightStyle, Highlighter};
-pub use incremental::{GreenTree, TextEdit, incremental_relex, RedNode};
+pub use incremental::{GreenTree, RedNode, TextEdit, incremental_relex};
 pub use language::Language;
 pub use r#macro::{ExpansionResult, Macro, MacroContext};
 pub use parser::Parser;

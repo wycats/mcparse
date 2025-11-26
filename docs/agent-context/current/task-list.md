@@ -1,1 +1,5 @@
-
+- [x] Refactor `VariableRules` to be post-lexing
+- [x] Implement `complete` method on `Language` trait
+- [x] Implement `ScopeStack` traversal for completion
+- [x] Update `repl` example to use variable completion
+- [x] Verify completion inside unclosed delimiters

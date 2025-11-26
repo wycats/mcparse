@@ -1,8 +1,3 @@
-- **Declarative Atom Syntax**: The current `define_atom!` macro is powerful but verbose for simple cases like Whitespace or Identifiers. We should explore a declarative syntax that is concise (like regex) but still captures the necessary constraints for the lexer (e.g., `kind`, `highlight`).
-- **Procedural Macro for `define_language!`**: As the DSL for defining languages grows (custom atoms, regex, literals, delimiters), the `macro_rules!` implementation is becoming complex and fragile. Switching to a procedural macro would allow for:
-  - Better error messages (pointing to the exact span of the error).
-  - More flexible syntax (not limited by `macro_rules!` matchers).
-  - Easier maintenance of the parsing logic.
-  - Better IDE support (potentially).
-- [ ] **VariableRules Context**: Give `VariableRules` access to the delimiter stack or more context to handle patterns like `let (a, b)`. Currently it only sees the previous token.
-- [ ] **Tab Completion for Variables**: Now that we have a `BindingPass` that runs before parsing, we can implement intelligent tab completion for variable references. When the user presses tab, we can look up the current scope in the `ScopeStack` and offer available bindings as completion candidates. This should work even inside unclosed delimiters due to the streaming-aware lexer.
+# Ideas
+
+(Empty - all items scheduled)

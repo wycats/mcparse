@@ -45,6 +45,7 @@ mod tests {
             SourceLocation {
                 span: SourceSpan::new(0usize.into(), 0usize.into()),
             },
+            true,
         );
         assert_eq!(tree.to_sexp(), "(brace \"key\")");
     }

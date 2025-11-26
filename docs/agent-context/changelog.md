@@ -74,3 +74,31 @@
   - `TextEdit`: Struct representing a range replacement.
 - **Logic**: Implemented `incremental_relex` to conservatively re-lex edited blocks without re-parsing the whole file.
 - **Verification**: Created `examples/incremental_demo.rs` demonstrating successful incremental updates and correct failure modes for structural changes.
+
+## Phase 8: Documentation & Advanced Features (Completed)
+
+- **Documentation**:
+  - Created `docs/book/src/advanced/incremental.md` detailing the Red/Green Tree architecture and "Bubble Up" re-lexing strategy.
+  - Updated `hygiene.md` and `macros.md` to reflect recent API changes (`ReferencePass` signature, `Macro` trait bounds).
+- **API Refinement**:
+  - Added `apply_edit` helper function to `src/incremental.rs` for automatic fallback handling.
+  - Added `is_closed` field to `GreenTree::Delimited` to correctly handle unclosed delimiters during text reconstruction.
+- **Verification**:
+  - Updated `examples/incremental_demo.rs` to verify `apply_edit` and the "Bubble Up" strategy for nested blocks.
+  - Verified documentation build with `mdbook build`.
+
+## Phase 9: Scoping & Completion (Completed)
+
+- **Feature**: Implemented intelligent variable completion for the REPL.
+- **Architecture**:
+  - Added `complete` method to `Language` trait.
+  - Implemented `collect_scope_at` in `BindingPass` for partial scope analysis up to a cursor position.
+  - Updated `TokenTree::Delimited` to track `is_closed` status, enabling robust completion inside unclosed blocks.
+- **Implementation**:
+  - Created `src/completion.rs` with `find_completions` logic.
+  - Updated `lexer` to populate `is_closed` flag.
+  - Updated `incremental` and `shape` modules to handle the new `TokenTree` signature.
+- **Verification**:
+  - Updated `examples/repl.rs` to demonstrate variable completion.
+  - Added unit tests for completion scenarios (simple, inside block, shadowing).
+  - Verified `cargo test` and `cargo clippy` pass.

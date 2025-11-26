@@ -24,6 +24,7 @@ pub enum GreenTree {
     Delimited {
         delimiter: Delimiter,
         children: Vec<GreenTree>,
+        is_closed: bool,
     },
     Group(Vec<GreenTree>),
     Empty,
@@ -33,10 +34,15 @@ impl GreenTree {
     pub fn width(&self) -> usize {
         match self {
             GreenTree::Token(t) => t.width(),
-            GreenTree::Delimited { delimiter, children } => {
+            GreenTree::Delimited {
+                delimiter,
+                children,
+                is_closed,
+            } => {
+                let content_width: usize = children.iter().map(|c| c.width()).sum();
                 delimiter.open.len()
-                    + children.iter().map(|c| c.width()).sum::<usize>()
-                    + delimiter.close.len()
+                    + content_width
+                    + if *is_closed { delimiter.close.len() } else { 0 }
             }
             GreenTree::Group(children) => children.iter().map(|c| c.width()).sum(),
             GreenTree::Empty => 0,
@@ -47,36 +53,44 @@ impl GreenTree {
     pub fn text(&self) -> String {
         match self {
             GreenTree::Token(t) => t.text.clone(),
-            GreenTree::Delimited { delimiter, children } => {
+            GreenTree::Delimited {
+                delimiter,
+                children,
+                is_closed,
+            } => {
                 let mut s = String::new();
                 s.push_str(delimiter.open);
                 for child in children {
                     s.push_str(&child.text());
                 }
-                s.push_str(delimiter.close);
+                if *is_closed {
+                    s.push_str(delimiter.close);
+                }
                 s
             }
-            GreenTree::Group(children) => {
-                children.iter().map(|c| c.text()).collect()
-            }
+            GreenTree::Group(children) => children.iter().map(|c| c.text()).collect(),
             GreenTree::Empty => String::new(),
         }
     }
 
     /// Converts a legacy `TokenTree` (with absolute offsets) to a `GreenTree`.
-    pub fn from_token_tree(tt: &TokenTree) -> Self {
-        match tt {
+    pub fn from_token_tree(tree: &TokenTree) -> GreenTree {
+        match tree {
             TokenTree::Token(t) => GreenTree::Token(GreenToken {
                 kind: t.kind.clone(),
                 text: t.text.clone(),
             }),
-            TokenTree::Delimited(d, children, _) => GreenTree::Delimited {
-                delimiter: d.clone(),
-                children: children.iter().map(Self::from_token_tree).collect(),
-            },
-            TokenTree::Group(children) => GreenTree::Group(
-                children.iter().map(Self::from_token_tree).collect(),
-            ),
+            TokenTree::Delimited(d, children, _, is_closed) => {
+                let children = children.iter().map(GreenTree::from_token_tree).collect();
+                GreenTree::Delimited {
+                    delimiter: d.clone(),
+                    children,
+                    is_closed: *is_closed,
+                }
+            }
+            TokenTree::Group(children) => {
+                GreenTree::Group(children.iter().map(Self::from_token_tree).collect())
+            }
             TokenTree::Empty => GreenTree::Empty,
             TokenTree::Error(_) => GreenTree::Empty, // TODO: Handle errors better
         }
@@ -133,14 +147,18 @@ fn relex_recursive(
     // Check if the edit is fully contained within this node
     // Note: We want to find the *deepest* container.
     // If the edit overlaps the boundaries, we can't handle it inside this node (unless it's the root).
-    
+
     // Strict containment: start >= offset && end <= node_end
     // But for Delimited nodes, we only want to re-lex if it's inside the *content*, not touching the delimiters.
-    
+
     match node {
-        GreenTree::Delimited { delimiter, children } => {
+        GreenTree::Delimited {
+            delimiter,
+            children,
+            is_closed,
+        } => {
             let open_len = delimiter.open.len();
-            let close_len = delimiter.close.len();
+            let close_len = if *is_closed { delimiter.close.len() } else { 0 };
             let content_start = offset + open_len;
             let content_end = node_end - close_len;
 
@@ -150,7 +168,9 @@ fn relex_recursive(
                 let mut current_child_offset = content_start;
                 for (i, child) in children.iter().enumerate() {
                     let child_width = child.width();
-                    if edit.start >= current_child_offset && edit.end <= current_child_offset + child_width {
+                    if edit.start >= current_child_offset
+                        && edit.end <= current_child_offset + child_width
+                    {
                         // Recurse into child
                         match relex_recursive(child, current_child_offset, edit, language) {
                             RelexResult::Success(new_child) => {
@@ -159,11 +179,12 @@ fn relex_recursive(
                                 return RelexResult::Success(GreenTree::Delimited {
                                     delimiter: delimiter.clone(),
                                     children: new_children,
+                                    is_closed: *is_closed,
                                 });
                             }
                             RelexResult::Failed => {
                                 // Child failed, but maybe we can re-lex this entire block?
-                                break; 
+                                break;
                             }
                         }
                     }
@@ -174,63 +195,104 @@ fn relex_recursive(
                 // 1. Edit spans multiple children (but still inside block)
                 // 2. Edit is in the "void" between children (if that's possible? No, we have whitespace atoms usually)
                 // 3. Child recursion failed.
-                
+
                 // Strategy: Re-lex the content of this block.
                 // 1. Reconstruct text of the *content* (inner text).
                 let mut inner_text = String::new();
                 for child in children {
                     inner_text.push_str(&child.text());
                 }
-                
+
                 // 2. Apply edit to inner text.
                 // We need to map the absolute edit offsets to relative offsets within inner_text.
                 let rel_start = edit.start - content_start;
                 let rel_end = edit.end - content_start;
-                
+
                 let new_inner_text = TextEdit {
                     start: rel_start,
                     end: rel_end,
                     new_text: edit.new_text.clone(),
-                }.apply(&inner_text);
+                }
+                .apply(&inner_text);
 
                 // 3. Lex the new inner text.
                 let new_tokens = lex(&new_inner_text, language);
-                
+
                 // 4. Convert to GreenTrees
-                let new_green_children: Vec<GreenTree> = new_tokens.iter().map(GreenTree::from_token_tree).collect();
+                let new_green_children: Vec<GreenTree> =
+                    new_tokens.iter().map(GreenTree::from_token_tree).collect();
 
                 // 5. Verify balance?
-                // The `lex` function handles delimiters. If `new_tokens` contains unbalanced delimiters, 
+                // The `lex` function handles delimiters. If `new_tokens` contains unbalanced delimiters,
                 // `lex` might return error nodes or weird structure.
                 // But `lex` is designed to be robust.
                 // The critical check is: Did the re-lexing consume the entire string without error?
                 // And did it produce a list of trees that fits into this block?
-                
+
                 // Actually, `lex` returns `Vec<TokenTree>`. If we put that into the block, it's fine.
                 // The only risk is if the user typed "}" inside the block, which would close it early.
                 // But `lex` on the *inner* text won't see the outer "}".
                 // So `lex` will treat "}" as an error or text depending on language.
-                
+
                 return RelexResult::Success(GreenTree::Delimited {
                     delimiter: delimiter.clone(),
                     children: new_green_children,
+                    is_closed: *is_closed,
                 });
             }
         }
         GreenTree::Group(children) => {
-             let mut current_child_offset = offset;
-             for (i, child) in children.iter().enumerate() {
-                 let child_width = child.width();
-                 if edit.start >= current_child_offset 
-                    && edit.end <= current_child_offset + child_width 
-                    && let RelexResult::Success(new_child) = relex_recursive(child, current_child_offset, edit, language) 
-                 {
-                     let mut new_children = children.clone();
-                     new_children[i] = new_child;
-                     return RelexResult::Success(GreenTree::Group(new_children));
-                 }
-                 current_child_offset += child_width;
-             }
+            let mut current_child_offset = offset;
+            for (i, child) in children.iter().enumerate() {
+                let child_width = child.width();
+                if edit.start >= current_child_offset
+                    && edit.end <= current_child_offset + child_width
+                {
+                    // Try to recurse
+                    if let RelexResult::Success(new_child) =
+                        relex_recursive(child, current_child_offset, edit, language)
+                    {
+                        let mut new_children = children.clone();
+                        new_children[i] = new_child;
+                        return RelexResult::Success(GreenTree::Group(new_children));
+                    }
+                    // If recursion failed, we break and fall through to re-lexing the whole group
+                    break;
+                }
+                current_child_offset += child_width;
+            }
+
+            // Fallback: Re-lex the content of this group
+            // This handles cases where the edit spans multiple children or touches boundaries,
+            // or if the child recursion failed.
+
+            // 1. Reconstruct text
+            let mut text = String::new();
+            for child in children {
+                text.push_str(&child.text());
+            }
+
+            // 2. Apply edit
+            // Map absolute edit to relative
+            if edit.start >= offset && edit.end <= offset + text.len() {
+                let rel_start = edit.start - offset;
+                let rel_end = edit.end - offset;
+
+                let new_text = TextEdit {
+                    start: rel_start,
+                    end: rel_end,
+                    new_text: edit.new_text.clone(),
+                }
+                .apply(&text);
+
+                // 3. Lex
+                let new_tokens = lex(&new_text, language);
+
+                // 4. Wrap in Group
+                return RelexResult::Success(GreenTree::Group(
+                    new_tokens.iter().map(GreenTree::from_token_tree).collect(),
+                ));
+            }
         }
         _ => {}
     }
@@ -239,11 +301,28 @@ fn relex_recursive(
     // Why fail? Because if we are at a Token, we can't "re-lex" just the token easily without knowing context.
     // Actually, if we are at the Root, we *must* handle it.
     // But `relex_recursive` is called recursively.
-    
+
     // If we are at the top level (offset 0, width = total), we should fall back to full re-lex if we are the root.
     // But the caller `incremental_relex` calls this.
-    
+
     RelexResult::Failed
+}
+
+/// Applies an edit to the tree, using incremental re-lexing if possible,
+/// or falling back to a full re-parse.
+pub fn apply_edit(root: &GreenTree, edit: &TextEdit, language: &impl Language) -> GreenTree {
+    match incremental_relex(root, edit, language) {
+        RelexResult::Success(new_root) => new_root,
+        RelexResult::Failed => {
+            // Fallback: Re-lex everything
+            let full_text = root.text();
+            let new_text = edit.apply(&full_text);
+            let new_tokens = lex(&new_text, language);
+
+            // The root of a file is typically a Group of tokens.
+            GreenTree::Group(new_tokens.iter().map(GreenTree::from_token_tree).collect())
+        }
+    }
 }
 
 /// A "Red" node is a transient cursor into the Green Tree that knows its absolute position.
@@ -266,8 +345,11 @@ impl<'a> RedNode<'a> {
         };
 
         match self.green {
-            GreenTree::Delimited { children: green_children, .. } |
-            GreenTree::Group(green_children) => {
+            GreenTree::Delimited {
+                children: green_children,
+                ..
+            }
+            | GreenTree::Group(green_children) => {
                 for child in green_children {
                     children.push(RedNode::new(child, current_offset));
                     current_offset += child.width();
@@ -293,6 +375,9 @@ impl<'a> RedNode<'a> {
         }
 
         // If no child contains it (or we are a leaf), return self
-        Some(RedNode { green: self.green, offset: self.offset })
+        Some(RedNode {
+            green: self.green,
+            offset: self.offset,
+        })
     }
 }

@@ -103,5 +103,17 @@ This file tracks key architectural and design decisions made throughout the proj
 ### [2025-12-02] Conservative Incremental Re-lexing
 
 - **Context**: When a user edits code, we want to re-lex as little as possible. However, re-lexing arbitrary ranges is dangerous due to context sensitivity (e.g., opening a comment).
-- **Decision**: We only attempt incremental re-lexing if the edit is strictly contained within the *content* of a `Delimited` node (e.g., inside `{ ... }`). If the edit touches the delimiters themselves, we fail and fall back to a wider scope.
+- **Decision**: We only attempt incremental re-lexing if the edit is strictly contained within the _content_ of a `Delimited` node (e.g., inside `{ ... }`). If the edit touches the delimiters themselves, we fail and fall back to a wider scope.
 - **Rationale**: This guarantees that the surrounding context (the delimiters) remains invariant, making it safe to swap out the internals without re-analyzing the parent.
+
+### [2025-12-02] Explicit `is_closed` Flag
+
+- **Context**: For robust completion inside unclosed blocks (e.g., `let x = 1; { let y = 2; |`), the parser needs to know if a delimiter group is "open-ended" to treat the cursor at EOF as being "inside" the group.
+- **Decision**: Added a boolean `is_closed` field to `TokenTree::Delimited`. The lexer populates this flag.
+- **Rationale**: This allows the scoping and completion logic to distinguish between a truly closed block (where cursor at end is outside) and an unclosed block (where cursor at end is inside), enabling correct variable visibility during typing.
+
+### [2025-12-02] Partial Scope Collection
+
+- **Context**: To provide completions at a specific cursor position, we need the state of the scope stack *at that exact point*, not the final state after parsing the whole file.
+- **Decision**: Added `collect_scope_at` to the `BindingPass` trait. This method traverses the token tree and stops populating the scope when it hits the target offset.
+- **Rationale**: This reuses the existing binding logic but adapts it for the specific needs of the completion engine, avoiding code duplication and ensuring that completions are always consistent with the language's scoping rules.

@@ -207,8 +207,8 @@ impl MockLanguage {
         }
     }
 
-    pub fn with_keyword_binding(self, _keyword: &str) -> Self {
-        // TODO: Implement a mock binding pass that respects this
+    pub fn with_keyword_binding(mut self, keyword: &str) -> Self {
+        self.binding_pass = Box::new(crate::scoping::SimpleBindingPass::new(keyword));
         self
     }
 

@@ -247,6 +247,8 @@ define_language! {
             close: ")",
         },
     ];
+    binding_pass = mcparse::scoping::SimpleBindingPass::new("let");
+    reference_pass = mcparse::scoping::SimpleReferencePass;
 }
 
 // --- Matchers ---
@@ -396,12 +398,22 @@ impl App {
             return;
         }
 
+        // 1. Get variable completions
+        self.completions = self.lang.complete(&self.input, self.cursor_pos);
+
+        // 2. Get shape completions (keywords, etc.)
         let trees = lex(&self.input, &self.lang);
         let stream = TokenStream::new(&trees);
         use mcparse::shape::NoOpMatchContext;
         let mut context = NoOpMatchContext;
+        let shape_completions = MiniScriptShape.complete(stream, &mut context, self.cursor_pos);
+        
+        self.completions.extend(shape_completions);
+        
+        // Deduplicate based on label
+        self.completions.sort_by(|a, b| a.label.cmp(&b.label));
+        self.completions.dedup_by(|a, b| a.label == b.label);
 
-        self.completions = MiniScriptShape.complete(stream, &mut context, self.cursor_pos);
         if self.completions.is_empty() {
             self.completion_state.select(None);
         } else {
@@ -490,7 +502,7 @@ fn ui(f: &mut Frame, app: &mut App) {
                 // Fallback if index is missing or invalid
                 highlighter.highlight(t, HighlightStyle::None);
             }
-            TokenTree::Delimited(d, children, _) => {
+            TokenTree::Delimited(d, children, _, _) => {
                 // Highlight open delimiter
                 highlighter.highlight(
                     &Token {
@@ -588,7 +600,7 @@ fn ui(f: &mut Frame, app: &mut App) {
                         return Some(t);
                     }
                 }
-                TokenTree::Delimited(_, children, loc) => {
+                TokenTree::Delimited(_, children, loc, _) => {
                     if loc.contains(pos) {
                         if let Some(found) = find_token_at(children, pos) {
                             return Some(found);

@@ -229,8 +229,11 @@ pub trait Language: Debug + Send + Sync {
     /// The set of initial macros available in the global scope.
     fn macros(&self) -> &[Box<dyn Macro>];
 
-    /// Rules for identifying variable bindings and references during atomic lexing.
-    fn variable_rules(&self) -> &dyn VariableRules;
+    /// The pass that identifies variable bindings in the token tree.
+    fn binding_pass(&self) -> &dyn BindingPass;
+
+    /// The pass that resolves variable references in the token tree.
+    fn reference_pass(&self) -> &dyn ReferencePass;
 }
 ```
 

@@ -5,7 +5,7 @@ use miette::SourceSpan;
 
 /// The entry point for the atomic lexer.
 /// Converts a raw string into a list of `TokenTree`s, handling delimiters recursively.
-pub fn lex(input: &str, language: &impl Language) -> Vec<TokenTree> {
+pub fn lex(input: &str, language: &(impl Language + ?Sized)) -> Vec<TokenTree> {
     let cursor = Cursor::new(input);
     let (trees, _) = lex_group(cursor, language, None);
     trees
@@ -14,7 +14,7 @@ pub fn lex(input: &str, language: &impl Language) -> Vec<TokenTree> {
 /// Recursively lexes a group of tokens until the input is exhausted or a closing delimiter is found.
 fn lex_group<'a>(
     mut cursor: Cursor<'a>,
-    language: &impl Language,
+    language: &(impl Language + ?Sized),
     terminator: Option<&Delimiter>,
 ) -> (Vec<TokenTree>, Cursor<'a>) {
     let mut trees = Vec::new();
@@ -61,7 +61,7 @@ fn lex_group<'a>(
                         SourceSpan::new(start_offset.into(), end_cursor.offset - start_offset);
                     let location = SourceLocation { span };
 
-                    trees.push(TokenTree::Delimited(delim.clone(), inner_trees, location));
+                    trees.push(TokenTree::Delimited(delim.clone(), inner_trees, location, true));
                     cursor = end_cursor;
                     continue 'outer;
                 } else {
@@ -70,7 +70,7 @@ fn lex_group<'a>(
                     let span =
                         SourceSpan::new(start_offset.into(), next_cursor.offset - start_offset);
                     let location = SourceLocation { span };
-                    trees.push(TokenTree::Delimited(delim.clone(), inner_trees, location));
+                    trees.push(TokenTree::Delimited(delim.clone(), inner_trees, location, false));
 
                     cursor = next_cursor;
                     // We continue, but likely next_cursor is at EOF or a mismatched closer, so the loop will handle it.
@@ -175,7 +175,7 @@ mod tests {
 
         assert_eq!(trees.len(), 1);
 
-        if let TokenTree::Delimited(delim, inner, _) = &trees[0] {
+        if let TokenTree::Delimited(delim, inner, _, _) = &trees[0] {
             assert_eq!(delim.kind, "paren");
             assert_eq!(inner.len(), 1); // foo
             if let TokenTree::Token(t) = &inner[0] {

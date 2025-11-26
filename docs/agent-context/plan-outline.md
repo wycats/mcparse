@@ -59,9 +59,29 @@
 - [x] Implement Tree-Based Invalidation logic.
 - [x] Implement Conservative Re-lexing.
 
-## Phase 8: Advanced Features & Ecosystem
+## Phase 8: Documentation (Completed)
 
-- [ ] Update "The McParse Book" with Incremental Parsing guide.
-- [ ] Declarative Macro Syntax.
-- [ ] Gradual Typing Syntax exploration.
+- [x] Update "The McParse Book" with Incremental Parsing guide.
+- [x] Review and update Reference documentation (Hygiene, Macros).
+
+## Phase 9: Scoping & Completion (Completed)
+
+- [x] Refactor `VariableRules` to be a post-lexing pass.
+- [x] Implement intelligent Tab Completion for variables using `ScopeStack`.
+- [x] Enhance `VariableRules` with context (delimiter stack).
+
+## Phase 10: DSL Refinement
+
+- [ ] Implement `define_language!` as a procedural macro.
+- [ ] Implement declarative atom syntax (regex-like).
+
+## Phase 11: Incremental Scoping & Semantics
+
+- [ ] Design incremental binding/reference resolution.
+- [ ] Implement "Binding Invalidation" logic (track dirty scopes).
+- [ ] Integrate Macro Expansion into the incremental pipeline.
+
+## Phase 12: Advanced Features & Ecosystem
+
 - [ ] Wasm bindings and TypeScript integration.
+- [ ] Gradual Typing Syntax exploration.

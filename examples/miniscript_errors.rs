@@ -2,7 +2,7 @@ use mcparse::{
     atom::{Atom, AtomKind},
     define_atom, define_language,
     highlighter::{HighlightStyle, Highlighter},
-    language::{Delimiter, Language},
+    language::Delimiter,
     lexer::lex,
     shape::{MatchContext, MatchResult, Matcher, Shape, seq, term},
     token::{Cursor, SourceLocation, Token, TokenStream, TokenTree},

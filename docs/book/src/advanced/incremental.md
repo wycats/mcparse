@@ -9,16 +9,17 @@ McParse implements a strategy inspired by Roslyn (C#) and Rowan (Rust-analyzer),
 The core idea is to split the syntax tree into two layers:
 
 1.  **Green Tree (Internal, Immutable, Relative)**:
-    *   Nodes store their **width** (length in characters) but *not* their absolute offset.
-    *   Nodes are **immutable**.
-    *   Because they don't know their position, identical nodes can be **shared** (structural sharing).
-    *   This is the "ground truth" of the parse structure.
+
+    - Nodes store their **width** (length in characters) but _not_ their absolute offset.
+    - Nodes are **immutable**.
+    - Because they don't know their position, identical nodes can be **shared** (structural sharing).
+    - This is the "ground truth" of the parse structure.
 
 2.  **Red Tree (External, Transient, Absolute)**:
-    *   A "cursor" or wrapper around a Green Node.
-    *   Stores the **absolute offset** of the node.
-    *   Created on-demand when traversing the tree.
-    *   Allows you to ask "what token is at offset X?".
+    - A "cursor" or wrapper around a Green Node.
+    - Stores the **absolute offset** of the node.
+    - Created on-demand when traversing the tree.
+    - Allows you to ask "what token is at offset X?".
 
 ### Data Structures
 
@@ -54,7 +55,7 @@ When a user edits the text, we want to update the Green Tree without re-parsing 
 
 ### The Algorithm
 
-1.  **Locate the Edit**: Given a `TextEdit` (start, end, new text), we find the deepest `Delimited` node (like `{ ... }` or `( ... )`) that *fully contains* the edit.
+1.  **Locate the Edit**: Given a `TextEdit` (start, end, new text), we find the deepest `Delimited` node (like `{ ... }` or `( ... )`) that _fully contains_ the edit.
 2.  **Isolate**: We extract the text of that node's content.
 3.  **Apply & Re-lex**: We apply the edit to that isolated text and re-run the lexer on just that small chunk.
 4.  **Stitch**: If re-lexing succeeds, we create a new `GreenTree` node for that block, reusing the old children that weren't touched.
@@ -65,7 +66,7 @@ When a user edits the text, we want to update the Green Tree without re-parsing 
 If an edit cannot be handled by a child node (e.g., because it deletes a closing brace `}`), the failure **bubbles up** to the parent.
 
 1.  **Child Failure**: The child node reports that it cannot contain the edit.
-2.  **Parent Recovery**: The parent node catches this failure and attempts to re-lex *its* own content (which includes the broken child).
+2.  **Parent Recovery**: The parent node catches this failure and attempts to re-lex _its_ own content (which includes the broken child).
 3.  **Root Fallback**: This continues up the tree. In the worst case, the Root node (usually a `Group` representing the whole file) will re-lex the entire file.
 
 This ensures that we always re-parse the **smallest possible scope** that can contain the change, preserving as much of the tree as possible.
@@ -99,4 +100,3 @@ let new_root = apply_edit(&root, &edit, &lang);
 
 println!("Updated text: {}", new_root.text());
 ```
-

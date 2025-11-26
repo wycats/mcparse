@@ -33,7 +33,7 @@ fn print_tree(tree: &TokenTree, indent: usize) {
             };
             println!("{}{:?} '{}'{}", pad, t.kind, t.text, binding_info);
         }
-        TokenTree::Delimited(d, children, _) => {
+        TokenTree::Delimited(d, children, _, _) => {
             println!("{}Delimited({})", pad, d.kind);
             for child in children {
                 print_tree(child, indent + 1);

@@ -58,7 +58,7 @@ impl Token {
 /// Can be a single token, a delimited group (which contains a list of TokenTrees), or a sequence group.
 pub enum TokenTree {
     Token(Token),
-    Delimited(Delimiter, Vec<TokenTree>, SourceLocation),
+    Delimited(Delimiter, Vec<TokenTree>, SourceLocation, bool),
     Group(Vec<TokenTree>), // For sequences
     Error(String),
     Empty,
@@ -72,7 +72,7 @@ impl TokenTree {
     pub fn to_sexp(&self) -> String {
         match self {
             TokenTree::Token(t) => format!("{:?}", t.text),
-            TokenTree::Delimited(d, children, _) => {
+            TokenTree::Delimited(d, children, _, _) => {
                 let inner: Vec<String> = children.iter().map(|c| c.to_sexp()).collect();
                 format!("({} {})", d.kind, inner.join(" "))
             }

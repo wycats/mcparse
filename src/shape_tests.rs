@@ -2,7 +2,7 @@
 mod tests {
     use crate::atom::AtomKind;
     use crate::shape::{
-        CompletionKind, MatchContext, Matcher, NoOpMatchContext, Shape, choice, rep, seq, term,
+        NoOpMatchContext, Shape, choice, seq, term,
     };
     use crate::token::{SourceLocation, Token, TokenStream, TokenTree};
     use miette::SourceSpan;

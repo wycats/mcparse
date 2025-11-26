@@ -1,49 +1,39 @@
-# Phase 7: Incremental Parsing Implementation (Walkthrough)
+# Phase 9: Scoping & Completion (Walkthrough)
 
 ## Goal
 
-Implement the "Red/Green Tree" architecture and incremental re-lexing strategy to enable efficient updates to the parse tree when the source code changes.
+Enhance the developer experience by implementing intelligent Tab Completion for variables in the REPL.
 
 ## Changes
 
-### 1. Green Tree Structure (`src/incremental.rs`)
+### 1. Refactored `VariableRules`
 
-We implemented the **Green Tree** data structure, which is immutable and position-independent.
+- Confirmed that `VariableRules` has been fully replaced by `BindingPass` and `ReferencePass`.
+- Updated `DESIGN.md` to reflect the new architecture.
 
-- `GreenToken`: Stores `AtomKind` and text. Knows its width but not its offset.
-- `GreenTree`: Recursive enum (`Token`, `Delimited`, `Group`, `Empty`).
-- `GreenTree::from_token_tree`: Converts legacy `TokenTree` (with absolute offsets) to `GreenTree`.
+### 2. Implemented `Language::complete`
 
-### 2. Red Node Traversal (`src/incremental.rs`)
+- Added `complete` method to `Language` trait.
+- Implemented `find_completions` helper in `src/completion.rs` that uses `BindingPass` to populate `ScopeStack` up to the cursor position.
+- Updated `BindingPass` trait to include `collect_scope_at` method for partial scope collection.
+- Implemented `collect_scope_at` for `SimpleBindingPass`.
 
-We implemented the **Red Node** cursor, which provides absolute offsets on demand.
+### 3. Unclosed Delimiter Handling
 
-- `RedNode`: Wraps a `GreenTree` reference and an `offset`.
-- `RedNode::children()`: Lazily computes children with correct absolute offsets.
-- `RedNode::find_at_offset(target)`: Efficiently locates the node at a specific position.
+- Updated `TokenTree::Delimited` to store `is_closed` boolean.
+- Updated `lexer` to populate this flag.
+- Updated `collect_scope_at` to correctly handle unclosed delimiters (treating the cursor as "inside" if the group is unclosed and extends to EOF).
+- Verified with tests in `src/completion.rs`.
 
-### 3. Incremental Re-lexing (`src/incremental.rs`)
+### 4. Updated REPL
 
-We implemented `incremental_relex`, a function that attempts to apply a `TextEdit` by re-lexing only the smallest containing `Delimited` block.
-
-- **Algorithm**:
-    1.  Find the deepest `Delimited` node that fully contains the edit range.
-    2.  Extract the text of its children.
-    3.  Apply the edit to that text.
-    4.  Re-lex the new text using the `Language`.
-    5.  If successful, return a new `GreenTree` with the updated children, sharing the rest of the tree structure.
-    6.  If the edit touches delimiters or cannot be isolated, return `RelexResult::Failed` (signaling a need for full re-parse).
-
-### 4. Verification
-
-- Created `examples/incremental_demo.rs`.
-- Verified:
-    - **Structural Sharing**: The root node width matches the text length.
-    - **Incremental Update**: Editing inside a block (`{ let y = 2; }` -> `{ let y = 3; }`) successfully updates just that block.
-    - **Failure Case**: Breaking a delimiter (deleting `}`) correctly fails the incremental step, as expected.
-    - **Red Node Traversal**: Confirmed we can find tokens by absolute offset in the Green Tree.
+- Updated `examples/repl.rs` to use `Language::complete` for variable completion.
+- Merged variable completions with shape-based completions (keywords).
+- Updated `MiniScriptLang` to use `SimpleBindingPass` and `SimpleReferencePass`.
 
 ## Key Decisions
 
-- **Red/Green Split**: Adopted the standard Roslyn/Rowan model for structural sharing.
-- **Conservative Re-lexing**: We only re-lex if the edit is strictly contained within a block's *content*. Touching delimiters forces a failure (and thus a parent re-lex or full re-parse) to ensure safety.
+- **Explicit `is_closed` flag**: We added a boolean to `TokenTree::Delimited` to distinguish between closed groups (where the cursor must be strictly inside) and unclosed groups (where the cursor at EOF is considered inside). This is crucial for completion while typing.
+- **`collect_scope_at`**: We added a method to `BindingPass` to allow "pausing" the binding analysis at a specific offset. This avoids the need to re-implement the binding logic just for completion.
+
+```
