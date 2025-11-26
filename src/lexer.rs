@@ -32,16 +32,18 @@ fn lex_group<'a>(
                     kind: AtomKind::Other("Unknown".to_string()),
                     text,
                     location,
+                    atom_index: None,
                 }));
             }
         };
 
         // 1. Check for terminator (close delimiter)
         if let Some(term) = terminator
-            && cursor.rest.starts_with(term.close) {
-                flush_unknown(&mut trees);
-                return (trees, cursor);
-            }
+            && cursor.rest.starts_with(term.close)
+        {
+            flush_unknown(&mut trees);
+            return (trees, cursor);
+        }
 
         // 2. Check for openers (delimiters)
         for delim in language.delimiters() {
@@ -55,10 +57,8 @@ fn lex_group<'a>(
                 // Check if we found the closer
                 if next_cursor.rest.starts_with(delim.close) {
                     let end_cursor = next_cursor.advance(delim.close.len());
-                    let span = SourceSpan::new(
-                        start_offset.into(),
-                        end_cursor.offset - start_offset,
-                    );
+                    let span =
+                        SourceSpan::new(start_offset.into(), end_cursor.offset - start_offset);
                     let location = SourceLocation { span };
 
                     trees.push(TokenTree::Delimited(delim.clone(), inner_trees, location));
@@ -69,10 +69,8 @@ fn lex_group<'a>(
                 } else {
                     // Unclosed delimiter - treat as a delimited group that extends to where the inner lexer stopped.
                     // This allows completion and partial parsing to work inside unclosed groups.
-                    let span = SourceSpan::new(
-                        start_offset.into(),
-                        next_cursor.offset - start_offset,
-                    );
+                    let span =
+                        SourceSpan::new(start_offset.into(), next_cursor.offset - start_offset);
                     let location = SourceLocation { span };
                     trees.push(TokenTree::Delimited(delim.clone(), inner_trees, location));
 
@@ -85,9 +83,12 @@ fn lex_group<'a>(
         }
 
         // 3. Check for atoms
-        for atom in language.atoms() {
+        for (index, atom) in language.atoms().iter().enumerate() {
             if let Some((mut token, next_cursor)) = atom.parse(cursor) {
                 flush_unknown(&mut trees);
+
+                // Set the atom index for highlighting
+                token.atom_index = Some(index);
 
                 // Apply variable rules
                 if let AtomKind::Identifier(_) = token.kind {
@@ -130,6 +131,7 @@ fn lex_group<'a>(
             kind: AtomKind::Other("Unknown".to_string()),
             text,
             location,
+            atom_index: None,
         }));
     }
 
@@ -172,7 +174,7 @@ mod tests {
 
         if let TokenTree::Token(t) = &trees[0] {
             assert_eq!(t.text, "let");
-            assert!(matches!(t.kind, AtomKind::Keyword(_)));
+            assert!(matches!(t.kind, AtomKind::Identifier(_)));
         }
 
         if let TokenTree::Token(t) = &trees[2] {

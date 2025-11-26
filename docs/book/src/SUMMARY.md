@@ -18,6 +18,8 @@
 
 - [Advanced Topics](./advanced/index.md)
 
+  - [Custom Atoms](./advanced/custom-atoms.md)
+  - [Contextual Keywords](./advanced/contextual-keywords.md)
   - [Error Recovery](./advanced/error-recovery.md)
   - [Incremental Parsing](./advanced/incremental.md)
   - [Custom Shapes](./advanced/custom-shapes.md)

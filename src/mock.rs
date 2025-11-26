@@ -30,6 +30,7 @@ impl Atom for WhitespaceAtom {
                 location: SourceLocation {
                     span: (input.offset, len).into(),
                 },
+                atom_index: None,
             };
             Some((token, input.advance(len)))
         } else {
@@ -76,6 +77,7 @@ impl Atom for IdentifierAtom {
                 location: SourceLocation {
                     span: (input.offset, len).into(),
                 },
+                atom_index: None,
             };
             Some((token, input.advance(len)))
         } else {
@@ -103,7 +105,7 @@ impl KeywordAtom {
 
 impl Atom for KeywordAtom {
     fn kind(&self) -> AtomKind {
-        AtomKind::Keyword(String::new())
+        AtomKind::Identifier(VariableRole::None)
     }
 
     fn parse<'a>(&self, input: Cursor<'a>) -> Option<(Token, Cursor<'a>)> {
@@ -113,11 +115,12 @@ impl Atom for KeywordAtom {
                 let next_char = input.rest[kw.len()..].chars().next();
                 if next_char.map_or(true, |c| !c.is_alphanumeric() && c != '_') {
                     let token = Token {
-                        kind: AtomKind::Keyword(kw.clone()),
+                        kind: AtomKind::Identifier(VariableRole::None),
                         text: kw.clone(),
                         location: SourceLocation {
                             span: (input.offset, kw.len()).into(),
                         },
+                        atom_index: None,
                     };
                     return Some((token, input.advance(kw.len())));
                 }
@@ -158,6 +161,7 @@ impl Atom for SymbolAtom {
                     location: SourceLocation {
                         span: (input.offset, sym.len()).into(),
                     },
+                    atom_index: None,
                 };
                 return Some((token, input.advance(sym.len())));
             }

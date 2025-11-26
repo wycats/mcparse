@@ -30,6 +30,9 @@ pub struct Token {
     pub kind: AtomKind,
     pub text: String,
     pub location: SourceLocation,
+    /// The index of the atom in the language definition that produced this token.
+    /// Used for syntax highlighting.
+    pub atom_index: Option<usize>,
 }
 
 impl Token {
@@ -38,6 +41,7 @@ impl Token {
             kind,
             text: text.to_string(),
             location: SourceLocation::new(offset, text.len()),
+            atom_index: None,
         }
     }
 }

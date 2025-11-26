@@ -17,7 +17,7 @@ In traditional parsers, if you add `async` to your keyword list, it becomes a di
 In McParse, since keywords are just identifiers:
 
 1.  `term("async")` matches an identifier with the text "async".
-2.  `term(AtomKind::Identifier)` matches *any* identifier, **including "async"**.
+2.  `term(AtomKind::Identifier)` matches _any_ identifier, **including "async"**.
 
 This means you can introduce new keywords without breaking existing variable usage, provided your grammar is unambiguous.
 
@@ -28,16 +28,16 @@ Suppose you want to add `async` as a keyword.
 1.  **Highlighting**: Add `"async"` to your `keywords` list in `define_language!`. This ensures it gets syntax highlighting.
 2.  **Parsing**: Use `term("async")` in your grammar where you expect the keyword.
 3.  **Compatibility**: Existing code like `let async = 5;` continues to work!
-    *   The lexer produces `async` as an `Identifier` token (highlighted as a keyword).
-    *   The `let` grammar expects an `Identifier`.
-    *   `async` matches `Identifier`.
-    *   Success!
+    - The lexer produces `async` as an `Identifier` token (highlighted as a keyword).
+    - The `let` grammar expects an `Identifier`.
+    - `async` matches `Identifier`.
+    - Success!
 
 ## Variable Rules and Hygiene
 
 Since `AtomKind::Keyword` does not exist, your `VariableRules` must rely on token text to decide when a binding occurs.
 
-> **Important**: Variable binding happens during the **Lexing** phase, *before* macro expansion. This means macros cannot dynamically introduce bindings based on their expansion. The binding status of an identifier is fixed once the lexer runs.
+> **Important**: Variable binding happens during the **Lexing** phase, _before_ macro expansion. This means macros cannot dynamically introduce bindings based on their expansion. The binding status of an identifier is fixed once the lexer runs.
 
 The default `PatternVariableRules` handles this automatically if you configure it correctly.
 
@@ -84,7 +84,7 @@ impl VariableRules for MyVariableRules {
 
 ### A Note on Scope
 
-`PatternVariableRules` uses a simple lookbehind heuristic. It does not understand blocks, scopes, or nesting. It purely checks if the *immediately preceding token* matches a keyword.
+`PatternVariableRules` uses a simple lookbehind heuristic. It does not understand blocks, scopes, or nesting. It purely checks if the _immediately preceding token_ matches a keyword.
 
 For example, in:
 
@@ -103,4 +103,4 @@ However, in:
 let (a, b) = (1, 2);
 ```
 
-`PatternVariableRules` will *not* identify `a` and `b` as bindings because they do not immediately follow `let`. For complex patterns, you may need a more sophisticated `VariableRules` implementation or rely on the parser to refine the binding information later (though McParse prefers to do it at lexing time for highlighting).
+`PatternVariableRules` will _not_ identify `a` and `b` as bindings because they do not immediately follow `let`. For complex patterns, you may need a more sophisticated `VariableRules` implementation or rely on the parser to refine the binding information later (though McParse prefers to do it at lexing time for highlighting).

@@ -48,10 +48,10 @@ impl VariableRules for PatternVariableRules {
         }
 
         if let Some(prev) = previous_token
-            && let AtomKind::Keyword(ref k) = prev.kind
-                && self.bind_after_keywords.contains(k) {
-                    return VariableRole::Binding;
-                }
+            && self.bind_after_keywords.contains(&prev.text)
+        {
+            return VariableRole::Binding;
+        }
 
         VariableRole::Reference
     }

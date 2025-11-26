@@ -21,8 +21,6 @@ pub enum AtomKind {
     Whitespace,
     /// An identifier (variable name, function name, etc.).
     Identifier(VariableRole),
-    /// A language keyword (e.g., `if`, `else`, `fn`).
-    Keyword(String),
     /// A string literal.
     String,
     /// A numeric literal.
@@ -42,7 +40,6 @@ impl Display for AtomKind {
                 VariableRole::Binding => write!(f, "variable binding"),
                 VariableRole::Reference => write!(f, "variable reference"),
             },
-            AtomKind::Keyword(k) => write!(f, "keyword '{}'", k),
             AtomKind::String => write!(f, "string"),
             AtomKind::Number => write!(f, "number"),
             AtomKind::Operator => write!(f, "operator"),

@@ -36,11 +36,80 @@ macro_rules! define_atom {
 
 #[macro_export]
 macro_rules! define_language {
+    // Helper: Resolve AtomKind
+    (@atom_kind Identifier) => { $crate::atom::AtomKind::Identifier($crate::atom::VariableRole::None) };
+    (@atom_kind $kind:ident) => { $crate::atom::AtomKind::$kind };
+
+    // Helper: Push atoms to vector
+    (@atom_list_push $v:ident) => {};
+    (@atom_list_push $v:ident,) => {};
+
+    // Case: atom Kind = regex "pattern"
+    (@atom_list_push $v:ident, atom $kind:ident = regex $regex:literal $(, $($rest:tt)*)?) => {
+        $v.push(Box::new($crate::atoms::RegexAtom::new(
+            $crate::define_language!(@atom_kind $kind),
+            $regex
+        )));
+        $crate::define_language!(@atom_list_push $v, $($($rest)*)?)
+    };
+
+    // Case: atom Kind = "literal"
+    (@atom_list_push $v:ident, atom $kind:ident = $literal:literal $(, $($rest:tt)*)?) => {
+        $v.push(Box::new($crate::atoms::LiteralAtom::new(
+            $crate::define_language!(@atom_kind $kind),
+            $literal
+        )));
+        $crate::define_language!(@atom_list_push $v, $($($rest)*)?)
+    };
+
+    // Case: keywords [ "a", "b" ]
+    (@atom_list_push $v:ident, keywords [ $($kw:literal),* $(,)? ] $(, $($rest:tt)*)?) => {
+        $v.push(Box::new($crate::atoms::KeywordAtom::new(&[ $($kw),* ])));
+        $crate::define_language!(@atom_list_push $v, $($($rest)*)?)
+    };
+
+    // Case: keyword "kw"
+    (@atom_list_push $v:ident, keyword $kw:literal $(, $($rest:tt)*)?) => {
+        $v.push(Box::new($crate::atoms::KeywordAtom::new(&[$kw])));
+        $crate::define_language!(@atom_list_push $v, $($($rest)*)?)
+    };
+
+    // Case: expression (fallback)
+    (@atom_list_push $v:ident, $e:expr $(, $($rest:tt)*)?) => {
+        $v.push(Box::new($e));
+        $crate::define_language!(@atom_list_push $v, $($($rest)*)?)
+    };
+
+    // Helper: Push delimiters to vector
+    (@delimiter_list_push $v:ident) => {};
+    (@delimiter_list_push $v:ident,) => {};
+
+    // Case: delimiter "kind" = "open", "close"
+    (@delimiter_list_push $v:ident, delimiter $kind:literal = $open:literal, $close:literal $(, $($rest:tt)*)?) => {
+        $v.push($crate::language::Delimiter {
+            kind: $kind,
+            open: $open,
+            close: $close,
+        });
+        $crate::define_language!(@delimiter_list_push $v, $($($rest)*)?)
+    };
+
+    // Case: expression (fallback)
+    (@delimiter_list_push $v:ident, $e:expr $(, $($rest:tt)*)?) => {
+        $v.push($e);
+        $crate::define_language!(@delimiter_list_push $v, $($($rest)*)?)
+    };
+
+    // Helper for variable_rules default
+    (@var_rules $rules:expr) => { $rules };
+    (@var_rules) => { $crate::language::NoOpVariableRules };
+
+    // Main entry point
     (
         $(#[$meta:meta])*
         struct $name:ident;
-        atoms = [ $($atom:expr),* $(,)? ];
-        delimiters = [ $($delimiter:expr),* $(,)? ];
+        atoms = [ $($atoms:tt)* ];
+        delimiters = [ $($delimiters:tt)* ];
         $(macros = [ $($macro:expr),* $(,)? ];)?
         $(variable_rules = $var_rules:expr;)?
     ) => {
@@ -55,11 +124,21 @@ macro_rules! define_language {
 
         impl $name {
             pub fn new() -> Self {
+                let mut atoms: Vec<Box<dyn $crate::atom::Atom>> = Vec::new();
+                $crate::define_language!(@atom_list_push atoms, $($atoms)*);
+
+                let mut delimiters: Vec<$crate::language::Delimiter> = Vec::new();
+                $crate::define_language!(@delimiter_list_push delimiters, $($delimiters)*);
+                // Suppress unused_mut warning if delimiters is empty
+                let _ = &mut delimiters;
+
                 Self {
-                    atoms: vec![ $(Box::new($atom)),* ],
-                    delimiters: vec![ $($delimiter),* ],
+                    atoms,
+                    delimiters,
                     macros: vec![ $($(Box::new($macro)),*)? ],
-                    variable_rules: Box::new($($var_rules)?),
+                    variable_rules: Box::new(
+                        $crate::define_language!(@var_rules $($var_rules)?)
+                    ),
                 }
             }
         }

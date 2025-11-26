@@ -32,6 +32,7 @@ define_atom! {
                     location: SourceLocation {
                         span: (input.offset, len).into(),
                     },
+                    atom_index: None,
                 },
                 input.advance(len),
             ))
@@ -59,6 +60,7 @@ impl Atom for Punctuation {
                     location: SourceLocation {
                         span: (input.offset, self.0.len()).into(),
                     },
+                    atom_index: None,
                 },
                 input.advance(self.0.len()),
             ))
@@ -93,6 +95,7 @@ define_atom! {
                         location: SourceLocation {
                             span: (input.offset, len).into(),
                         },
+                        atom_index: None,
                     },
                     input.advance(len),
                 ));
@@ -125,6 +128,7 @@ define_atom! {
                     location: SourceLocation {
                         span: (input.offset, len).into(),
                     },
+                    atom_index: None,
                 },
                 input.advance(len),
             ))

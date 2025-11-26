@@ -12,6 +12,7 @@ mod tests {
             location: SourceLocation {
                 span: SourceSpan::new(0usize.into(), 0usize.into()),
             },
+            atom_index: None,
         })
     }
 

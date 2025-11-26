@@ -109,6 +109,7 @@ define_atom! {
                     location: SourceLocation {
                         span: (input.offset, len).into(),
                     },
+                    atom_index: None,
                 },
                 input.advance(len),
             ))
@@ -136,6 +137,7 @@ impl Atom for Punctuation {
                     location: SourceLocation {
                         span: (input.offset, self.0.len()).into(),
                     },
+                    atom_index: None,
                 },
                 input.advance(self.0.len()),
             ))
@@ -170,6 +172,7 @@ define_atom! {
                         location: SourceLocation {
                             span: (input.offset, len).into(),
                         },
+                        atom_index: None,
                     },
                     input.advance(len),
                 ));
@@ -202,6 +205,7 @@ define_atom! {
                     location: SourceLocation {
                         span: (input.offset, len).into(),
                     },
+                    atom_index: None,
                 },
                 input.advance(len),
             ))
@@ -487,25 +491,16 @@ fn ui(f: &mut Frame, app: &mut App) {
     ) {
         match tree {
             TokenTree::Token(t) => {
-                // Find the atom that matches this token to get the highlight style
-                // This is a bit inefficient as we re-parse, but for a REPL it's fine.
-                // Actually, we can just iterate atoms and check kind?
-                // Or better, define_atom! generated highlight method takes a token.
-                // But we don't know WHICH atom generated it easily without storing it.
-                // For now, let's just map AtomKind to style manually or try to find the atom.
-
-                let mut matched = false;
-                for atom in lang.atoms() {
-                    if std::mem::discriminant(&atom.kind()) == std::mem::discriminant(&t.kind) {
+                // Use the atom index to find the correct atom for highlighting
+                if let Some(index) = t.atom_index {
+                    if let Some(atom) = lang.atoms().get(index) {
                         atom.highlight(t, highlighter);
-                        matched = true;
-                        break;
+                        return;
                     }
                 }
-                if !matched {
-                    // Fallback
-                    highlighter.highlight(t, HighlightStyle::None);
-                }
+
+                // Fallback if index is missing or invalid
+                highlighter.highlight(t, HighlightStyle::None);
             }
             TokenTree::Delimited(d, children, _) => {
                 // Highlight open delimiter
@@ -516,6 +511,7 @@ fn ui(f: &mut Frame, app: &mut App) {
                         location: SourceLocation {
                             span: (0, 0).into(),
                         }, // Dummy location
+                        atom_index: None,
                     },
                     HighlightStyle::Punctuation,
                 );
@@ -532,6 +528,7 @@ fn ui(f: &mut Frame, app: &mut App) {
                         location: SourceLocation {
                             span: (0, 0).into(),
                         }, // Dummy location
+                        atom_index: None,
                     },
                     HighlightStyle::Punctuation,
                 );

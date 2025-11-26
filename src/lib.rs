@@ -38,6 +38,7 @@
 //! ```
 
 pub mod atom;
+pub mod atoms;
 pub mod highlighter;
 pub mod language;
 pub mod lexer;
@@ -60,6 +61,10 @@ pub use shape::{
 };
 pub use token::{Cursor, SourceLocation, Token, TokenTree};
 
+#[cfg(test)]
+mod atoms_tests;
+#[cfg(test)]
+mod macro_tests;
 #[cfg(test)]
 mod shape_tests;
 #[cfg(test)]
@@ -91,6 +96,9 @@ mod book_tests {
     #[doc = include_str!("../docs/book/src/advanced/error-recovery.md")]
     pub struct ErrorRecovery;
 
+    #[doc = include_str!("../docs/book/src/advanced/custom-atoms.md")]
+    pub struct CustomAtoms;
+
     #[doc = include_str!("../docs/book/src/advanced/custom-shapes.md")]
     pub struct CustomShapes;
 
@@ -111,4 +119,7 @@ mod book_tests {
 
     #[doc = include_str!("../docs/book/src/cookbook/index.md")]
     pub struct Cookbook;
+
+    #[doc = include_str!("../docs/book/src/advanced/contextual-keywords.md")]
+    pub struct ContextualKeywords;
 }

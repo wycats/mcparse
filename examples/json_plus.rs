@@ -1,173 +1,27 @@
 use mcparse::{
-    atom::{Atom, AtomKind, VariableRole},
-    define_atom, define_language,
-    highlighter::{HighlightStyle, Highlighter},
-    language::{Delimiter, Language, VariableRules},
+    atom::AtomKind,
+    define_language,
+    language::Delimiter,
     lexer::lex,
-    r#macro::Macro,
     shape::{MatchContext, MatchResult, Shape, choice, enter, opt, separated, seq, term},
-    token::{Cursor, SourceLocation, Token, TokenStream},
+    token::TokenStream,
 };
 
-// --- Atoms ---
-
-define_atom! {
-    struct Whitespace;
-    kind = AtomKind::Whitespace;
-    parse(input) {
-        let mut len = 0;
-        for c in input.rest.chars() {
-            if c.is_whitespace() {
-                len += c.len_utf8();
-            } else {
-                break;
-            }
-        }
-        if len > 0 {
-            Some((
-                Token {
-                    kind: AtomKind::Whitespace,
-                    text: input.rest[..len].to_string(),
-                    location: SourceLocation {
-                        span: (input.offset, len).into(),
-                    },
-                },
-                input.advance(len),
-            ))
-        } else {
-            None
-        }
-    }
-    highlight(token, highlighter) {
-        highlighter.highlight(token, HighlightStyle::None);
-    }
-}
-
-#[derive(Debug)]
-struct Punctuation(String);
-impl Atom for Punctuation {
-    fn kind(&self) -> AtomKind {
-        AtomKind::Operator
-    } // Reuse Operator for punctuation
-    fn parse<'a>(&self, input: Cursor<'a>) -> Option<(Token, Cursor<'a>)> {
-        if input.rest.starts_with(&self.0) {
-            Some((
-                Token {
-                    kind: AtomKind::Operator,
-                    text: self.0.clone(),
-                    location: SourceLocation {
-                        span: (input.offset, self.0.len()).into(),
-                    },
-                },
-                input.advance(self.0.len()),
-            ))
-        } else {
-            None
-        }
-    }
-    fn highlight(&self, token: &Token, highlighter: &mut dyn Highlighter) {
-        highlighter.highlight(token, HighlightStyle::Operator);
-    }
-}
-
-define_atom! {
-    struct StringLiteral;
-    kind = AtomKind::String;
-    parse(input) {
-        if input.rest.starts_with('"') {
-            let mut len = 1;
-            let mut escaped = false;
-            for c in input.rest[1..].chars() {
-                len += c.len_utf8();
-                if escaped {
-                    escaped = false;
-                } else if c == '\\' {
-                    escaped = true;
-                } else if c == '"' {
-                    return Some((
-                        Token {
-                            kind: AtomKind::String,
-                            text: input.rest[..len].to_string(),
-                            location: SourceLocation {
-                                span: (input.offset, len).into(),
-                            },
-                        },
-                        input.advance(len),
-                    ));
-                }
-            }
-        }
-        None
-    }
-    highlight(token, highlighter) {
-        highlighter.highlight(token, HighlightStyle::String);
-    }
-}
-
-define_atom! {
-    struct NumberLiteral;
-    kind = AtomKind::Number;
-    parse(input) {
-        let mut len = 0;
-        for c in input.rest.chars() {
-            if c.is_ascii_digit() {
-                len += c.len_utf8();
-            } else {
-                break;
-            }
-        }
-        if len > 0 {
-            Some((
-                Token {
-                    kind: AtomKind::Number,
-                    text: input.rest[..len].to_string(),
-                    location: SourceLocation {
-                        span: (input.offset, len).into(),
-                    },
-                },
-                input.advance(len),
-            ))
-        } else {
-            None
-        }
-    }
-    highlight(token, highlighter) {
-        highlighter.highlight(token, HighlightStyle::Number);
-    }
-}
-
 // --- Language ---
-
-#[derive(Debug)]
-struct NoOpVariableRules;
-impl VariableRules for NoOpVariableRules {
-    fn classify(&self, _prev: Option<&Token>, _curr: &Token) -> VariableRole {
-        VariableRole::None
-    }
-}
 
 define_language! {
     struct JsonPlusLang;
     atoms = [
-        Whitespace,
-        Punctuation(":".into()),
-        Punctuation(",".into()),
-        StringLiteral,
-        NumberLiteral
+        atom Whitespace = regex r"\s+",
+        atom Operator = ":",
+        atom Operator = ",",
+        atom String = regex r#""([^"\\]|\\.)*""#,
+        atom Number = regex r"\d+",
     ];
     delimiters = [
-        Delimiter {
-            kind: "brace",
-            open: "{",
-            close: "}",
-        },
-        Delimiter {
-            kind: "bracket",
-            open: "[",
-            close: "]",
-        },
+        delimiter "brace" = "{", "}",
+        delimiter "bracket" = "[", "]",
     ];
-    variable_rules = NoOpVariableRules;
 }
 
 // --- Shapes ---

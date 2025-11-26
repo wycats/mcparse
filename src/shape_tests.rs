@@ -14,6 +14,7 @@ mod tests {
             location: SourceLocation {
                 span: SourceSpan::new(offset.into(), text.len().into()),
             },
+            atom_index: None,
         })
     }
 

@@ -12,94 +12,31 @@ cd number_list
 cargo add mcparse miette
 ```
 
-## 2. Define Atoms
+## 2. Define Language
 
-We need three atoms: Numbers, Commas, and Whitespace.
-
-```rust
-use mcparse::{define_atom, atom::{Atom, AtomKind}, token::{Token, SourceLocation, Cursor}, highlighter::{Highlighter, HighlightStyle}};
-
-// 1. Whitespace (Standard boilerplate)
-define_atom! {
-    struct Whitespace;
-    kind = AtomKind::Whitespace;
-    parse(input) {
-        let len = input.rest.chars().take_while(|c| c.is_whitespace()).map(|c| c.len_utf8()).sum();
-        if len > 0 {
-            Some((Token::new(AtomKind::Whitespace, &input.rest[..len], input.offset), input.advance(len)))
-        } else {
-            None
-        }
-    }
-    highlight(token, h) { h.highlight(token, HighlightStyle::None); }
-}
-
-// 2. Comma
-define_atom! {
-    struct Comma;
-    kind = AtomKind::Operator;
-    parse(input) {
-        if input.rest.starts_with(',') {
-            Some((Token::new(AtomKind::Operator, ",", input.offset), input.advance(1)))
-        } else {
-            None
-        }
-    }
-    highlight(token, h) { h.highlight(token, HighlightStyle::Operator); }
-}
-
-// 3. Number
-define_atom! {
-    struct Number;
-    kind = AtomKind::Number;
-    parse(input) {
-        let len = input.rest.chars().take_while(|c| c.is_ascii_digit()).map(|c| c.len_utf8()).sum();
-        if len > 0 {
-            Some((Token::new(AtomKind::Number, &input.rest[..len], input.offset), input.advance(len)))
-        } else {
-            None
-        }
-    }
-    highlight(token, h) { h.highlight(token, HighlightStyle::Number); }
-}
-```
-
-## 3. Define Language
-
-Group them into a language.
+We can define our language, including its atoms, in one go using the `define_language!` macro.
 
 ```rust
-# use mcparse::{define_atom, atom::{Atom, AtomKind}, token::{Token, Cursor}, highlighter::{Highlighter, HighlightStyle}};
-# define_atom! { struct Whitespace; kind = AtomKind::Whitespace; parse(input) { None } highlight(token, h) {} }
-# define_atom! { struct Comma; kind = AtomKind::Operator; parse(input) { None } highlight(token, h) {} }
-# define_atom! { struct Number; kind = AtomKind::Number; parse(input) { None } highlight(token, h) {} }
-use mcparse::{define_language, language::{Delimiter, VariableRules, VariableRole}};
-
-#[derive(Debug)] struct NoOpRules;
-impl VariableRules for NoOpRules { fn classify(&self, _: Option<&Token>, _: &Token) -> VariableRole { VariableRole::None } }
+use mcparse::{define_language, language::Delimiter};
 
 define_language! {
     struct ListLang;
-    atoms = [Whitespace, Comma, Number];
-    delimiters = []; // No parentheses for now!
-    variable_rules = NoOpRules;
+    atoms = [
+        atom Whitespace = regex r"\s+",
+        atom Number = regex r"\d+",
+        atom Operator = ",",
+    ];
+    delimiters = [];
 }
 ```
 
-## 4. Parse!
+## 3. Parse!
 
 Now use the `separated` shape to parse the list. We'll also use `miette` to print nice errors if something goes wrong.
 
 ```rust
 # use mcparse::{define_language, language::{Delimiter, VariableRules, Language}, atom::{Atom, AtomKind as HiddenAtomKind}, r#macro::Macro};
-# #[derive(Debug)] struct ListLang;
-# impl ListLang { fn new() -> Self { Self } }
-# impl Language for ListLang {
-#     fn atoms(&self) -> &[Box<dyn Atom>] { &[] }
-#     fn delimiters(&self) -> &[Delimiter] { &[] }
-#     fn macros(&self) -> &[Box<dyn Macro>] { &[] }
-#     fn variable_rules(&self) -> &dyn VariableRules { &mcparse::language::NoOpVariableRules }
-# }
+# define_language! { struct ListLang; atoms = [ atom Whitespace = regex r"\s+", atom Number = regex r"\d+", atom Operator = ",", ]; delimiters = []; }
 use mcparse::{lexer::lex, token::TokenStream, shape::{separated, term, Shape, NoOpMatchContext}, AtomKind};
 use miette::{NamedSource, Report};
 
@@ -113,6 +50,7 @@ fn main() {
     let stream = TokenStream::new(&trees);
 
     // 2. Define Shape: Number separated by Comma
+    // Note: We use term(",") to match the literal comma atom we defined.
     let list_shape = separated(term(AtomKind::Number), term(","));
 
     // 3. Match

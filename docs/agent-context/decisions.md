@@ -85,5 +85,5 @@ This file tracks key architectural and design decisions made throughout the proj
 ### [2025-11-29] Lexing-Time Binding
 
 - **Context**: We initially conflated variable binding with macro expansion, which led to confusion about scope and timing.
-- **Decision**: Clarified that variable binding is a strictly **lexing-time** property determined by `VariableRules`. Macros cannot dynamically introduce bindings; they can only manipulate tokens that were *already* marked as bindings by the lexer.
+- **Decision**: Clarified that variable binding is a strictly **lexing-time** property determined by `VariableRules`. Macros cannot dynamically introduce bindings; they can only manipulate tokens that were _already_ marked as bindings by the lexer.
 - **Rationale**: This separation of concerns simplifies the mental model. The lexer handles "what is this?" (Binding vs Reference), and the parser/macros handle "what does this mean?" (Structure/Semantics). It also enables robust syntax highlighting without running the full parser.
