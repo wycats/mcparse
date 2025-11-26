@@ -1,7 +1,8 @@
-use crate::atom::{Atom, AtomKind, VariableRole};
+use crate::atom::{Atom, AtomKind};
 use crate::highlighter::{HighlightStyle, Highlighter};
-use crate::language::{Delimiter, Language, PatternVariableRules, VariableRules};
+use crate::language::{Delimiter, Language};
 use crate::r#macro::Macro;
+use crate::scoping::{BindingPass, NoOpBindingPass, NoOpReferencePass, ReferencePass};
 use crate::token::{Cursor, SourceLocation, Token};
 
 #[derive(Debug)]
@@ -31,6 +32,7 @@ impl Atom for WhitespaceAtom {
                     span: (input.offset, len).into(),
                 },
                 atom_index: None,
+                binding: None,
             };
             Some((token, input.advance(len)))
         } else {
@@ -48,7 +50,7 @@ pub struct IdentifierAtom;
 
 impl Atom for IdentifierAtom {
     fn kind(&self) -> AtomKind {
-        AtomKind::Identifier(VariableRole::None)
+        AtomKind::Identifier
     }
 
     fn parse<'a>(&self, input: Cursor<'a>) -> Option<(Token, Cursor<'a>)> {
@@ -72,12 +74,13 @@ impl Atom for IdentifierAtom {
         if len > 0 {
             let text = input.rest[..len].to_string();
             let token = Token {
-                kind: AtomKind::Identifier(VariableRole::None),
+                kind: AtomKind::Identifier,
                 text,
                 location: SourceLocation {
                     span: (input.offset, len).into(),
                 },
                 atom_index: None,
+                binding: None,
             };
             Some((token, input.advance(len)))
         } else {
@@ -105,7 +108,7 @@ impl KeywordAtom {
 
 impl Atom for KeywordAtom {
     fn kind(&self) -> AtomKind {
-        AtomKind::Identifier(VariableRole::None)
+        AtomKind::Identifier
     }
 
     fn parse<'a>(&self, input: Cursor<'a>) -> Option<(Token, Cursor<'a>)> {
@@ -115,12 +118,13 @@ impl Atom for KeywordAtom {
                 let next_char = input.rest[kw.len()..].chars().next();
                 if next_char.map_or(true, |c| !c.is_alphanumeric() && c != '_') {
                     let token = Token {
-                        kind: AtomKind::Identifier(VariableRole::None),
+                        kind: AtomKind::Identifier,
                         text: kw.clone(),
                         location: SourceLocation {
                             span: (input.offset, kw.len()).into(),
                         },
                         atom_index: None,
+                        binding: None,
                     };
                     return Some((token, input.advance(kw.len())));
                 }
@@ -162,6 +166,7 @@ impl Atom for SymbolAtom {
                         span: (input.offset, sym.len()).into(),
                     },
                     atom_index: None,
+                    binding: None,
                 };
                 return Some((token, input.advance(sym.len())));
             }
@@ -179,7 +184,8 @@ pub struct MockLanguage {
     atoms: Vec<Box<dyn Atom>>,
     delimiters: Vec<Delimiter>,
     macros: Vec<Box<dyn Macro>>,
-    variable_rules: Box<dyn VariableRules>,
+    binding_pass: Box<dyn BindingPass>,
+    reference_pass: Box<dyn ReferencePass>,
 }
 
 impl MockLanguage {
@@ -196,17 +202,13 @@ impl MockLanguage {
                 close: ")",
             }],
             macros: vec![],
-            variable_rules: Box::new(PatternVariableRules::new()),
+            binding_pass: Box::new(NoOpBindingPass),
+            reference_pass: Box::new(NoOpReferencePass),
         }
     }
 
-    pub fn with_keyword_binding(mut self, keyword: &str) -> Self {
-        // This is a bit hacky because we boxed the rules.
-        // Ideally we'd build the rules first.
-        // For now, let's just replace it.
-        let mut rules = PatternVariableRules::new();
-        rules = rules.bind_after_keyword(keyword);
-        self.variable_rules = Box::new(rules);
+    pub fn with_keyword_binding(self, _keyword: &str) -> Self {
+        // TODO: Implement a mock binding pass that respects this
         self
     }
 
@@ -234,7 +236,11 @@ impl Language for MockLanguage {
         &self.macros
     }
 
-    fn variable_rules(&self) -> &dyn VariableRules {
-        self.variable_rules.as_ref()
+    fn binding_pass(&self) -> &dyn BindingPass {
+        self.binding_pass.as_ref()
+    }
+
+    fn reference_pass(&self) -> &dyn ReferencePass {
+        self.reference_pass.as_ref()
     }
 }

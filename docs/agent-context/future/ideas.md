@@ -5,3 +5,4 @@
   - Easier maintenance of the parsing logic.
   - Better IDE support (potentially).
 - [ ] **VariableRules Context**: Give `VariableRules` access to the delimiter stack or more context to handle patterns like `let (a, b)`. Currently it only sees the previous token.
+- [ ] **Tab Completion for Variables**: Now that we have a `BindingPass` that runs before parsing, we can implement intelligent tab completion for variable references. When the user presses tab, we can look up the current scope in the `ScopeStack` and offer available bindings as completion candidates. This should work even inside unclosed delimiters due to the streaming-aware lexer.

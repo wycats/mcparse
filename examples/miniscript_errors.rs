@@ -1,8 +1,8 @@
 use mcparse::{
-    atom::{Atom, AtomKind, VariableRole},
+    atom::{Atom, AtomKind},
     define_atom, define_language,
     highlighter::{HighlightStyle, Highlighter},
-    language::{Delimiter, VariableRules},
+    language::{Delimiter, Language},
     lexer::lex,
     shape::{MatchContext, MatchResult, Matcher, Shape, seq, term},
     token::{Cursor, SourceLocation, Token, TokenStream, TokenTree},
@@ -33,6 +33,7 @@ define_atom! {
                         span: (input.offset, len).into(),
                     },
                     atom_index: None,
+                    binding: None,
                 },
                 input.advance(len),
             ))
@@ -61,6 +62,7 @@ impl Atom for Punctuation {
                         span: (input.offset, self.0.len()).into(),
                     },
                     atom_index: None,
+                    binding: None,
                 },
                 input.advance(self.0.len()),
             ))
@@ -75,7 +77,7 @@ impl Atom for Punctuation {
 
 define_atom! {
     struct Identifier;
-    kind = AtomKind::Identifier(VariableRole::None);
+    kind = AtomKind::Identifier;
     parse(input) {
         let mut chars = input.rest.chars();
         if let Some(c) = chars.next() {
@@ -90,12 +92,13 @@ define_atom! {
                 }
                 return Some((
                     Token {
-                        kind: AtomKind::Identifier(VariableRole::None),
+                        kind: AtomKind::Identifier,
                         text: input.rest[..len].to_string(),
                         location: SourceLocation {
                             span: (input.offset, len).into(),
                         },
                         atom_index: None,
+                        binding: None,
                     },
                     input.advance(len),
                 ));
@@ -129,6 +132,7 @@ define_atom! {
                         span: (input.offset, len).into(),
                     },
                     atom_index: None,
+                    binding: None,
                 },
                 input.advance(len),
             ))
@@ -138,21 +142,6 @@ define_atom! {
     }
     highlight(token, highlighter) {
         highlighter.highlight(token, HighlightStyle::Number);
-    }
-}
-
-#[derive(Debug)]
-struct MiniScriptVariableRules;
-impl VariableRules for MiniScriptVariableRules {
-    fn classify(&self, prev: Option<&Token>, curr: &Token) -> VariableRole {
-        if matches!(curr.kind, AtomKind::Identifier(_)) {
-            if let Some(p) = prev {
-                if p.text == "let" {
-                    return VariableRole::Binding;
-                }
-            }
-        }
-        VariableRole::None
     }
 }
 
@@ -181,7 +170,6 @@ define_language! {
             close: ")",
         },
     ];
-    variable_rules = MiniScriptVariableRules;
 }
 
 // --- Matchers ---
@@ -191,7 +179,7 @@ struct AnyIdentifier;
 impl Matcher for AnyIdentifier {
     fn matches(&self, tree: &TokenTree) -> bool {
         match tree {
-            TokenTree::Token(token) => matches!(token.kind, AtomKind::Identifier(_)),
+            TokenTree::Token(token) => matches!(token.kind, AtomKind::Identifier),
             _ => false,
         }
     }

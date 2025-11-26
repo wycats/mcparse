@@ -18,7 +18,6 @@ fn lex_group<'a>(
     terminator: Option<&Delimiter>,
 ) -> (Vec<TokenTree>, Cursor<'a>) {
     let mut trees = Vec::new();
-    let mut previous_token: Option<Token> = None;
     let mut pending_unknown: Option<(usize, String)> = None;
 
     'outer: while !cursor.rest.is_empty() {
@@ -33,6 +32,7 @@ fn lex_group<'a>(
                     text,
                     location,
                     atom_index: None,
+                    binding: None,
                 }));
             }
         };
@@ -63,8 +63,6 @@ fn lex_group<'a>(
 
                     trees.push(TokenTree::Delimited(delim.clone(), inner_trees, location));
                     cursor = end_cursor;
-                    // Reset previous_token as we just finished a group
-                    previous_token = None;
                     continue 'outer;
                 } else {
                     // Unclosed delimiter - treat as a delimited group that extends to where the inner lexer stopped.
@@ -75,7 +73,6 @@ fn lex_group<'a>(
                     trees.push(TokenTree::Delimited(delim.clone(), inner_trees, location));
 
                     cursor = next_cursor;
-                    previous_token = None;
                     // We continue, but likely next_cursor is at EOF or a mismatched closer, so the loop will handle it.
                     continue 'outer;
                 }
@@ -90,20 +87,7 @@ fn lex_group<'a>(
                 // Set the atom index for highlighting
                 token.atom_index = Some(index);
 
-                // Apply variable rules
-                if let AtomKind::Identifier(_) = token.kind {
-                    let role = language
-                        .variable_rules()
-                        .classify(previous_token.as_ref(), &token);
-                    token.kind = AtomKind::Identifier(role);
-                }
-
                 trees.push(TokenTree::Token(token.clone()));
-
-                // Update previous_token only if it's not whitespace
-                if !matches!(token.kind, AtomKind::Whitespace) {
-                    previous_token = Some(token);
-                }
 
                 cursor = next_cursor;
                 continue 'outer;
@@ -132,6 +116,7 @@ fn lex_group<'a>(
             text,
             location,
             atom_index: None,
+            binding: None,
         }));
     }
 
@@ -141,7 +126,7 @@ fn lex_group<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::atom::{AtomKind, VariableRole};
+    use crate::atom::AtomKind;
     use crate::mock::MockLanguage;
 
     #[test]
@@ -154,10 +139,7 @@ mod tests {
 
         if let TokenTree::Token(t) = &trees[0] {
             assert_eq!(t.text, "foo");
-            assert!(matches!(
-                t.kind,
-                AtomKind::Identifier(VariableRole::Reference)
-            ));
+            assert!(matches!(t.kind, AtomKind::Identifier));
         } else {
             panic!("Expected token");
         }
@@ -174,15 +156,12 @@ mod tests {
 
         if let TokenTree::Token(t) = &trees[0] {
             assert_eq!(t.text, "let");
-            assert!(matches!(t.kind, AtomKind::Identifier(_)));
+            assert!(matches!(t.kind, AtomKind::Identifier));
         }
 
         if let TokenTree::Token(t) = &trees[2] {
             assert_eq!(t.text, "x");
-            assert!(matches!(
-                t.kind,
-                AtomKind::Identifier(VariableRole::Binding)
-            ));
+            assert!(matches!(t.kind, AtomKind::Identifier));
         } else {
             panic!("Expected token x");
         }

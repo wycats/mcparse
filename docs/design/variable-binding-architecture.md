@@ -4,6 +4,32 @@
 
 This document outlines a revised architecture for handling variable bindings and references in McParse. The goal is to decouple variable identification from the initial lexical analysis while ensuring it happens _before_ macro expansion. This allows for more robust scoping rules without complicating the core atomic lexer.
 
+## Retrospective: The Atomic Lexing Oversight
+
+### The Initial Mistake
+
+In earlier iterations of McParse, we attempted to handle variable binding (hygiene) purely at the **Atomic Lexing** phase. The `Language` trait had a `VariableRules` method that allowed looking at the _previous token_ to decide if the current identifier was a binding or a reference.
+
+### Why It Failed
+
+This approach was fundamentally flawed for several reasons:
+
+1.  **Conflation of Concerns**: It tried to mix "what is this token?" (Lexing) with "what does this token mean?" (Semantics).
+2.  **Insufficient Context**: A simple lookbehind (`prev_token`) is not enough to handle complex grammars. For example, in `let (a, b) = ...`, `a` and `b` are bindings, but neither immediately follows `let`.
+3.  **Scope Ignorance**: The lexer produces a flat stream (or a tree during construction), but it doesn't inherently track _scope boundaries_. To correctly resolve references, you need a stack of scopes, which requires traversing the structure _after_ it is built.
+4.  **Shadowing & Hoisting**: Complex scoping rules like shadowing (inner `let x` hides outer `let x`) or hoisting (function declarations visible before definition) are impossible to implement in a single-pass lexer without building significant side-state that mirrors parsing.
+
+### The Correction
+
+We moved to a **Multi-Pass Architecture**:
+
+1.  **Lexing**: Produces a structural `TokenTree`.
+2.  **Binding Pass**: Traverses the tree to identify declarations and build the scope graph.
+3.  **Reference Pass**: Traverses the tree to resolve usages against the scope graph.
+4.  **Parsing**: Matches shapes against the fully resolved tree.
+
+This separation allows the lexer to remain simple and fast, while the scoping passes can be as complex as the language requires (e.g., implementing block scoping, function scoping, or module scoping) without complicating the grammar or the lexer.
+
 ## The 4-Step Process
 
 1.  **Flat Lexical Scan**:

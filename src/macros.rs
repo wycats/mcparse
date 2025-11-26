@@ -37,7 +37,7 @@ macro_rules! define_atom {
 #[macro_export]
 macro_rules! define_language {
     // Helper: Resolve AtomKind
-    (@atom_kind Identifier) => { $crate::atom::AtomKind::Identifier($crate::atom::VariableRole::None) };
+    (@atom_kind Identifier) => { $crate::atom::AtomKind::Identifier };
     (@atom_kind $kind:ident) => { $crate::atom::AtomKind::$kind };
 
     // Helper: Push atoms to vector
@@ -100,9 +100,13 @@ macro_rules! define_language {
         $crate::define_language!(@delimiter_list_push $v, $($($rest)*)?)
     };
 
-    // Helper for variable_rules default
-    (@var_rules $rules:expr) => { $rules };
-    (@var_rules) => { $crate::language::NoOpVariableRules };
+    // Helper for binding_pass default
+    (@binding_pass $pass:expr) => { Box::new($pass) };
+    (@binding_pass) => { Box::new($crate::scoping::NoOpBindingPass) };
+
+    // Helper for reference_pass default
+    (@reference_pass $pass:expr) => { Box::new($pass) };
+    (@reference_pass) => { Box::new($crate::scoping::NoOpReferencePass) };
 
     // Main entry point
     (
@@ -111,7 +115,8 @@ macro_rules! define_language {
         atoms = [ $($atoms:tt)* ];
         delimiters = [ $($delimiters:tt)* ];
         $(macros = [ $($macro:expr),* $(,)? ];)?
-        $(variable_rules = $var_rules:expr;)?
+        $(binding_pass = $binding_pass:expr;)?
+        $(reference_pass = $reference_pass:expr;)?
     ) => {
         $(#[$meta])*
         #[derive(Debug)]
@@ -119,7 +124,8 @@ macro_rules! define_language {
             atoms: Vec<Box<dyn $crate::atom::Atom>>,
             delimiters: Vec<$crate::language::Delimiter>,
             macros: Vec<Box<dyn $crate::r#macro::Macro>>,
-            variable_rules: Box<dyn $crate::language::VariableRules>,
+            binding_pass: Box<dyn $crate::scoping::BindingPass>,
+            reference_pass: Box<dyn $crate::scoping::ReferencePass>,
         }
 
         impl $name {
@@ -136,9 +142,8 @@ macro_rules! define_language {
                     atoms,
                     delimiters,
                     macros: vec![ $($(Box::new($macro)),*)? ],
-                    variable_rules: Box::new(
-                        $crate::define_language!(@var_rules $($var_rules)?)
-                    ),
+                    binding_pass: $crate::define_language!(@binding_pass $($binding_pass)?),
+                    reference_pass: $crate::define_language!(@reference_pass $($reference_pass)?),
                 }
             }
         }
@@ -153,8 +158,11 @@ macro_rules! define_language {
             fn macros(&self) -> &[Box<dyn $crate::r#macro::Macro>] {
                 &self.macros
             }
-            fn variable_rules(&self) -> &dyn $crate::language::VariableRules {
-                self.variable_rules.as_ref()
+            fn binding_pass(&self) -> &dyn $crate::scoping::BindingPass {
+                self.binding_pass.as_ref()
+            }
+            fn reference_pass(&self) -> &dyn $crate::scoping::ReferencePass {
+                self.reference_pass.as_ref()
             }
         }
     };

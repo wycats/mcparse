@@ -52,3 +52,15 @@
   - Explicitly documented the "Lexing-Time Binding" constraint.
 - **Examples**: Refactored `json_plus.rs` and `miniscript.rs` to use the new ergonomic syntax, reducing boilerplate significantly.
 - **Verification**: Verified all book examples and unit tests pass with the new API.
+
+## Phase 6: Variable Binding & Scoping (Completed)
+
+- **Architecture**: Moved from "Lexing-Time Binding" to a multi-pass architecture (Lex -> Binding Pass -> Reference Pass -> Parse) to support block scoping and shadowing.
+- **Core Traits**: Defined `BindingPass` and `ReferencePass` traits in `src/scoping.rs` for identifying and resolving variables.
+- **Implementation**:
+  - Implemented `ScopeStack` for managing nested scopes.
+  - Implemented `SimpleBindingPass` and `SimpleReferencePass` as default implementations.
+  - Updated `Token` to carry `binding: Option<BindingId>`.
+- **Verification**: Created `examples/scoping_demo.rs` verifying correct handling of shadowing, block scopes, and hoisting checks.
+- **Documentation**: Updated "The McParse Book" to reflect the new architecture and updated `docs/design/variable-binding-architecture.md`.
+- **Migration**: Updated `miniscript` and `repl` examples to use the new API.

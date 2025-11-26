@@ -33,74 +33,12 @@ Suppose you want to add `async` as a keyword.
     - `async` matches `Identifier`.
     - Success!
 
-## Variable Rules and Hygiene
+## Variable Binding and Scoping
 
-Since `AtomKind::Keyword` does not exist, your `VariableRules` must rely on token text to decide when a binding occurs.
+Since `AtomKind::Keyword` does not exist, determining which identifiers are variable bindings and which are references requires analyzing the token stream.
 
-> **Important**: Variable binding happens during the **Lexing** phase, _before_ macro expansion. This means macros cannot dynamically introduce bindings based on their expansion. The binding status of an identifier is fixed once the lexer runs.
+In McParse, this is handled by the `BindingPass` and `ReferencePass` traits, which run **after** lexing but **before** macro expansion.
 
-The default `PatternVariableRules` handles this automatically if you configure it correctly.
+> **Important**: Variable binding happens on the `TokenTree` structure. This allows for more complex rules than simple lookbehind, but it still happens before parsing the full grammar.
 
-```rust
-use mcparse::language::PatternVariableRules;
-
-let rules = PatternVariableRules::new()
-    .bind_after_keyword("let")
-    .bind_after_keyword("fn");
-```
-
-If you implement `VariableRules` manually, check the text of the previous token:
-
-```rust
-use mcparse::{
-    token::Token,
-    atom::{AtomKind, VariableRole},
-    language::VariableRules,
-};
-
-#[derive(Debug)]
-struct MyVariableRules;
-
-impl VariableRules for MyVariableRules {
-    fn classify(&self, prev: Option<&Token>, curr: &Token) -> VariableRole {
-        // Only classify identifiers
-        if !matches!(curr.kind, AtomKind::Identifier(_)) {
-            return VariableRole::None;
-        }
-
-        if let Some(prev) = prev {
-            // Check text instead of AtomKind::Keyword
-            match prev.text.as_str() {
-                "let" | "fn" => return VariableRole::Binding,
-                "alias" => return VariableRole::Binding, // Contextual keyword
-                _ => {}
-            }
-        }
-
-        VariableRole::Reference
-    }
-}
-```
-
-### A Note on Scope
-
-`PatternVariableRules` uses a simple lookbehind heuristic. It does not understand blocks, scopes, or nesting. It purely checks if the _immediately preceding token_ matches a keyword.
-
-For example, in:
-
-```rust
-let x = 1;
-{
-    let x = 2;
-}
-```
-
-Both `x`s are identified as bindings because they both follow `let`.
-
-However, in:
-
-```rust
-let (a, b) = (1, 2);
-```
-
-`PatternVariableRules` will _not_ identify `a` and `b` as bindings because they do not immediately follow `let`. For complex patterns, you may need a more sophisticated `VariableRules` implementation or rely on the parser to refine the binding information later (though McParse prefers to do it at lexing time for highlighting).
+This architecture allows you to implement complex scoping rules (like block scoping, shadowing, and hoisting) without complicating the core lexer.

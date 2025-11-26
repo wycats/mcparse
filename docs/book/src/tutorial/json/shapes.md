@@ -120,12 +120,12 @@ impl Shape for JsonValue {
 Now you can parse some JSON!
 
 ```rust
-# use mcparse::{shape::{Shape, MatchContext, MatchResult, term, seq, choice, enter, opt, separated}, token::TokenStream, AtomKind, language::{Delimiter, Language, VariableRules}, r#macro::Macro};
+# use mcparse::{shape::{Shape, MatchContext, MatchResult, term, seq, choice, enter, opt, separated}, token::TokenStream, AtomKind, language::{Delimiter, Language}, r#macro::Macro};
 # #[derive(Clone, Copy, Debug)] struct JsonValue;
 # impl Shape for JsonValue { fn match_shape<'a>(&self, s: TokenStream<'a>, c: &mut dyn MatchContext) -> MatchResult<'a> { Ok((mcparse::token::TokenTree::Empty, s)) } }
 # #[derive(Debug)] struct JsonLang;
 # impl JsonLang { fn new() -> Self { Self } }
-# impl Language for JsonLang { fn macros(&self) -> &[Box<dyn Macro>] { &[] } fn variable_rules(&self) -> &dyn VariableRules { &mcparse::language::NoOpVariableRules } fn atoms(&self) -> &[Box<dyn mcparse::Atom>] { &[] } fn delimiters(&self) -> &[Delimiter] { &[] } }
+# impl Language for JsonLang { fn macros(&self) -> &[Box<dyn Macro>] { &[] } fn binding_pass(&self) -> &dyn mcparse::scoping::BindingPass { &mcparse::scoping::NoOpBindingPass } fn reference_pass(&self) -> &dyn mcparse::scoping::ReferencePass { &mcparse::scoping::NoOpReferencePass } fn atoms(&self) -> &[Box<dyn mcparse::Atom>] { &[] } fn delimiters(&self) -> &[Delimiter] { &[] } }
 fn main() {
     let lang = JsonLang::new();
     let input = r#"{ "key": "value", "list": [ 1, 2, 3 ] }"#;

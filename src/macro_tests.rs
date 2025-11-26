@@ -22,11 +22,11 @@ fn test_macro_expansion() {
     assert_eq!(atoms.len(), 5);
 
     // Check kinds
-    assert!(matches!(atoms[0].kind(), AtomKind::Identifier(_)));
+    assert!(matches!(atoms[0].kind(), AtomKind::Identifier));
     assert!(matches!(atoms[1].kind(), AtomKind::Number));
     assert!(matches!(atoms[2].kind(), AtomKind::Operator));
-    assert!(matches!(atoms[3].kind(), AtomKind::Identifier(_)));
-    assert!(matches!(atoms[4].kind(), AtomKind::Identifier(_)));
+    assert!(matches!(atoms[3].kind(), AtomKind::Identifier));
+    assert!(matches!(atoms[4].kind(), AtomKind::Identifier));
 
     let delimiters = lang.delimiters();
     assert_eq!(delimiters.len(), 1);

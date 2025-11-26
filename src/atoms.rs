@@ -1,4 +1,4 @@
-use crate::atom::{Atom, AtomKind, VariableRole};
+use crate::atom::{Atom, AtomKind};
 use crate::highlighter::{HighlightStyle, Highlighter};
 use crate::token::{Cursor, Token};
 use regex::Regex;
@@ -67,7 +67,7 @@ impl Atom for RegexAtom {
             AtomKind::Number => HighlightStyle::Number,
             AtomKind::Operator => HighlightStyle::Operator,
             AtomKind::Whitespace => HighlightStyle::None,
-            AtomKind::Identifier(_) => HighlightStyle::Variable,
+            AtomKind::Identifier => HighlightStyle::Variable,
             _ => HighlightStyle::None,
         };
         highlighter.highlight(token, style);
@@ -90,7 +90,7 @@ impl KeywordAtom {
 
 impl Atom for KeywordAtom {
     fn kind(&self) -> AtomKind {
-        AtomKind::Identifier(VariableRole::None)
+        AtomKind::Identifier
     }
 
     fn parse<'a>(&self, input: Cursor<'a>) -> Option<(Token, Cursor<'a>)> {
@@ -113,11 +113,7 @@ impl Atom for KeywordAtom {
         if let Some(keyword) = best_match {
             let len = keyword.len();
             Some((
-                Token::new(
-                    AtomKind::Identifier(VariableRole::None),
-                    keyword,
-                    input.offset,
-                ),
+                Token::new(AtomKind::Identifier, keyword, input.offset),
                 input.advance(len),
             ))
         } else {

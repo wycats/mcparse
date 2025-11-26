@@ -20,7 +20,7 @@ use mcparse::{shape::{recover, term, seq, Matcher}, token::TokenTree, AtomKind};
 # #[derive(Debug, Clone)] struct Expression;
 # impl Shape for Expression { fn match_shape<'a>(&self, s: TokenStream<'a>, _: &mut dyn MatchContext) -> MatchResult<'a> { Err(ParseError::new((0,0).into(), "".into())) } }
 # #[derive(Debug, Clone)] struct AnyIdentifier;
-# impl Matcher for AnyIdentifier { fn matches(&self, t: &TokenTree) -> bool { matches!(t, TokenTree::Token(tok) if matches!(tok.kind, AtomKind::Identifier(_))) } fn describe(&self) -> String { "identifier".into() } }
+# impl Matcher for AnyIdentifier { fn matches(&self, t: &TokenTree) -> bool { matches!(t, TokenTree::Token(tok) if matches!(tok.kind, AtomKind::Identifier)) } fn describe(&self) -> String { "identifier".into() } }
 
 // Parse a statement: "let" <ident> "=" <expr> ";"
 let statement = seq(

@@ -87,3 +87,9 @@ This file tracks key architectural and design decisions made throughout the proj
 - **Context**: We initially conflated variable binding with macro expansion, which led to confusion about scope and timing.
 - **Decision**: Clarified that variable binding is a strictly **lexing-time** property determined by `VariableRules`. Macros cannot dynamically introduce bindings; they can only manipulate tokens that were _already_ marked as bindings by the lexer.
 - **Rationale**: This separation of concerns simplifies the mental model. The lexer handles "what is this?" (Binding vs Reference), and the parser/macros handle "what does this mean?" (Structure/Semantics). It also enables robust syntax highlighting without running the full parser.
+
+### [2025-12-02] Post-Lexing Binding Pass
+
+- **Context**: The "Lexing-Time Binding" approach (using `VariableRules` during atomic lexing) proved insufficient for block scoping and shadowing because the lexer is strictly linear and doesn't track nested scope state effectively (especially with lookahead limitations).
+- **Decision**: Replaced `VariableRules` with a multi-pass architecture: 1. Atomic Lexing (produces `TokenTree`), 2. `BindingPass` (identifies declarations), 3. `ReferencePass` (resolves references), 4. Parsing.
+- **Rationale**: This decouples the "what is a token" (Lexer) from "what does it mean in context" (Scoping). It allows for full tree traversal (handling nested blocks) and lookahead/lookbehind without complicating the core lexer. It also enables correct handling of shadowing and forward references (if desired).

@@ -35,7 +35,7 @@ define_language! {
 Now use the `separated` shape to parse the list. We'll also use `miette` to print nice errors if something goes wrong.
 
 ```rust
-# use mcparse::{define_language, language::{Delimiter, VariableRules, Language}, atom::{Atom, AtomKind as HiddenAtomKind}, r#macro::Macro};
+# use mcparse::{define_language, language::{Delimiter, Language}, atom::{Atom, AtomKind as HiddenAtomKind}, r#macro::Macro};
 # define_language! { struct ListLang; atoms = [ atom Whitespace = regex r"\s+", atom Number = regex r"\d+", atom Operator = ",", ]; delimiters = []; }
 use mcparse::{lexer::lex, token::TokenStream, shape::{separated, term, Shape, NoOpMatchContext}, AtomKind};
 use miette::{NamedSource, Report};

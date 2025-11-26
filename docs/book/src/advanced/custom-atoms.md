@@ -66,6 +66,7 @@ impl Atom for CustomString {
                             span: (input.offset, len).into(),
                         },
                         atom_index: None,
+                        binding: None,
                     },
                     input.advance(len),
                 ));
@@ -87,11 +88,9 @@ impl Atom for CustomString {
 You can mix custom atoms with declarative ones in your language definition:
 
 ```rust
-# use mcparse::{define_language, language::{Delimiter, VariableRules, VariableRole, Language}, atom::{Atom, AtomKind}, token::{Token, Cursor, SourceLocation}, highlighter::{Highlighter, HighlightStyle}};
+# use mcparse::{define_language, language::{Delimiter, Language}, atom::{Atom, AtomKind}, token::{Token, Cursor, SourceLocation}, highlighter::{Highlighter, HighlightStyle}};
 # #[derive(Debug)] struct CustomString;
 # impl Atom for CustomString { fn kind(&self) -> AtomKind { AtomKind::String } fn parse<'a>(&self, i: Cursor<'a>) -> Option<(Token, Cursor<'a>)> { None } fn highlight(&self, t: &Token, h: &mut dyn Highlighter) {} }
-# #[derive(Debug)] struct NoOpVariableRules;
-# impl VariableRules for NoOpVariableRules { fn classify(&self, _p: Option<&Token>, _c: &Token) -> VariableRole { VariableRole::None } }
 
 define_language! {
     struct MyLang;
@@ -102,6 +101,5 @@ define_language! {
         // atom Whitespace = r"\s+";
     ];
     delimiters = [];
-    variable_rules = NoOpVariableRules;
 }
 ```

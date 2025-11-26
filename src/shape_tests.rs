@@ -9,12 +9,13 @@ mod tests {
 
     fn mock_token(text: &str, offset: usize) -> TokenTree {
         TokenTree::Token(Token {
-            kind: AtomKind::Identifier(crate::atom::VariableRole::None),
+            kind: AtomKind::Identifier,
             text: text.to_string(),
             location: SourceLocation {
                 span: SourceSpan::new(offset.into(), text.len().into()),
             },
             atom_index: None,
+            binding: None,
         })
     }
 

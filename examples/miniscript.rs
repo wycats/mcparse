@@ -1,7 +1,7 @@
 use mcparse::{
-    atom::{Atom, AtomKind, VariableRole},
+    atom::{Atom, AtomKind},
     highlighter::{HighlightStyle, Highlighter},
-    language::{Delimiter, Language, VariableRules},
+    language::{Delimiter, Language},
     lexer::lex,
     r#macro::{ExpansionResult, Macro, MacroContext},
     shape::{Matcher, Shape, seq, term},
@@ -34,6 +34,7 @@ impl Atom for Whitespace {
                         span: (input.offset, len).into(),
                     },
                     atom_index: None,
+                    binding: None,
                 },
                 input.advance(len),
             ))
@@ -50,7 +51,7 @@ impl Atom for Whitespace {
 struct Identifier;
 impl Atom for Identifier {
     fn kind(&self) -> AtomKind {
-        AtomKind::Identifier(VariableRole::None)
+        AtomKind::Identifier
     }
     fn parse<'a>(&self, input: Cursor<'a>) -> Option<(Token, Cursor<'a>)> {
         let mut chars = input.rest.chars();
@@ -66,12 +67,13 @@ impl Atom for Identifier {
                 }
                 return Some((
                     Token {
-                        kind: AtomKind::Identifier(VariableRole::None),
+                        kind: AtomKind::Identifier,
                         text: input.rest[..len].to_string(),
                         location: SourceLocation {
                             span: (input.offset, len).into(),
                         },
                         atom_index: None,
+                        binding: None,
                     },
                     input.advance(len),
                 ));
@@ -100,6 +102,7 @@ impl Atom for Operator {
                         span: (input.offset, self.0.len()).into(),
                     },
                     atom_index: None,
+                    binding: None,
                 },
                 input.advance(self.0.len()),
             ))
@@ -136,6 +139,7 @@ impl Atom for NumberLiteral {
                         span: (input.offset, len).into(),
                     },
                     atom_index: None,
+                    binding: None,
                 },
                 input.advance(len),
             ))
@@ -155,7 +159,7 @@ struct AnyIdentifier;
 impl Matcher for AnyIdentifier {
     fn matches(&self, tree: &TokenTree) -> bool {
         match tree {
-            TokenTree::Token(token) => matches!(token.kind, AtomKind::Identifier(_)),
+            TokenTree::Token(token) => matches!(token.kind, AtomKind::Identifier),
             _ => false,
         }
     }
@@ -207,7 +211,6 @@ struct MiniScriptLang {
     atoms: Vec<Box<dyn Atom>>,
     delimiters: Vec<Delimiter>,
     macros: Vec<Box<dyn Macro>>,
-    variable_rules: Box<dyn VariableRules>,
 }
 
 impl MiniScriptLang {
@@ -233,23 +236,7 @@ impl MiniScriptLang {
                 },
             ],
             macros: vec![Box::new(LetMacro::new())],
-            variable_rules: Box::new(MiniScriptVariableRules),
         }
-    }
-}
-
-#[derive(Debug)]
-struct MiniScriptVariableRules;
-impl VariableRules for MiniScriptVariableRules {
-    fn classify(&self, prev: Option<&Token>, curr: &Token) -> VariableRole {
-        if matches!(curr.kind, AtomKind::Identifier(_)) {
-            if let Some(p) = prev {
-                if p.text == "let" {
-                    return VariableRole::Binding;
-                }
-            }
-        }
-        VariableRole::None
     }
 }
 
@@ -263,8 +250,12 @@ impl Language for MiniScriptLang {
     fn macros(&self) -> &[Box<dyn Macro>] {
         &self.macros
     }
-    fn variable_rules(&self) -> &dyn VariableRules {
-        self.variable_rules.as_ref()
+    fn binding_pass(&self) -> &dyn mcparse::scoping::BindingPass {
+        &mcparse::scoping::NoOpBindingPass
+    }
+
+    fn reference_pass(&self) -> &dyn mcparse::scoping::ReferencePass {
+        &mcparse::scoping::NoOpReferencePass
     }
 }
 

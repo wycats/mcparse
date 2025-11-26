@@ -19,15 +19,12 @@ fn test_regex_atom_whitespace() {
 
 #[test]
 fn test_regex_atom_identifier() {
-    let atom = RegexAtom::new(
-        AtomKind::Identifier(crate::atom::VariableRole::None),
-        r"[a-zA-Z_]\w*",
-    );
+    let atom = RegexAtom::new(AtomKind::Identifier, r"[a-zA-Z_]\w*");
     let input = "variable_123 = 5";
     let cursor = Cursor::new(input);
 
     let (token, next) = atom.parse(cursor).expect("Should match identifier");
-    assert!(matches!(token.kind, AtomKind::Identifier(_)));
+    assert!(matches!(token.kind, AtomKind::Identifier));
     assert_eq!(token.text, "variable_123");
     assert_eq!(token.location.span.len(), 12);
     assert_eq!(next.rest, " = 5");
@@ -71,7 +68,7 @@ fn test_keyword_atom_basic() {
     let cursor = Cursor::new(input);
 
     let (token, next) = atom.parse(cursor).expect("Should match keyword");
-    assert!(matches!(token.kind, AtomKind::Identifier(_)));
+    assert!(matches!(token.kind, AtomKind::Identifier));
     assert_eq!(token.text, "while");
     assert_eq!(next.rest, " condition");
 }
@@ -84,7 +81,7 @@ fn test_keyword_atom_longest_match() {
     let cursor = Cursor::new(input);
 
     let (token, next) = atom.parse(cursor).expect("Should match keyword");
-    assert!(matches!(token.kind, AtomKind::Identifier(_)));
+    assert!(matches!(token.kind, AtomKind::Identifier));
     assert_eq!(token.text, "integer");
     assert_eq!(next.rest, " x");
 }

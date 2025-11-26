@@ -43,7 +43,7 @@ impl Shape for ContextualKeyword {
         // 1. Peek at the next token
         if let Some(TokenTree::Token(token)) = stream.first() {
              // 2. Check if it matches our criteria
-            if let AtomKind::Identifier(_) = token.kind {
+            if let AtomKind::Identifier = token.kind {
                 if token.text == "contextual" {
                     // 3. Success! Return the token tree and the ADVANCED stream.
                     return Ok((TokenTree::Token(token.clone()), stream.advance(1)));

@@ -45,13 +45,13 @@
 - [x] Simplify boilerplate for common patterns (Whitespace, Identifiers).
 - [x] Evaluate `define_atom!` and `define_language!` macros for improvements.
 
-## Phase 6: Variable Binding & Scoping Architecture
+## Phase 6: Variable Binding & Scoping Architecture (Completed)
 
-- [ ] Design the `BindingPass` and `ReferencePass` traits.
-- [ ] Refactor `VariableRules` to operate on `TokenTree` (post-lexing).
-- [ ] Implement block-based scoping logic.
-- [ ] Update Macro Expansion to respect pre-calculated bindings.
-- [ ] Verify context-free syntax constraints.
+- [x] Design the `BindingPass` and `ReferencePass` traits.
+- [x] Refactor `VariableRules` to operate on `TokenTree` (post-lexing).
+- [x] Implement block-based scoping logic.
+- [x] Update Macro Expansion to respect pre-calculated bindings.
+- [x] Verify context-free syntax constraints.
 
 ## Phase 7: Incremental Parsing Implementation
 

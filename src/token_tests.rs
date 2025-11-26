@@ -7,12 +7,13 @@ mod tests {
 
     fn mock_token(text: &str) -> TokenTree {
         TokenTree::Token(Token {
-            kind: AtomKind::Identifier(crate::atom::VariableRole::None),
+            kind: AtomKind::Identifier,
             text: text.to_string(),
             location: SourceLocation {
                 span: SourceSpan::new(0usize.into(), 0usize.into()),
             },
             atom_index: None,
+            binding: None,
         })
     }
 

@@ -1,28 +1,44 @@
 # Hygiene & Scoping
 
-McParse handles hygiene by classifying identifiers during the atomic lexing phase.
+McParse handles hygiene by classifying identifiers during a post-lexing pass.
 
-## `VariableRole`
+## `BindingPass` and `ReferencePass`
 
-Identifiers carry a `VariableRole`:
+Scoping is handled by two traits on the `Language`:
 
-- `Binding`: A declaration of a new variable (e.g., `let x`).
-- `Reference`: A usage of an existing variable (e.g., `x + 1`).
-- `None`: Neither (or unknown).
+- `BindingPass`: Identifies which tokens declare new variables (bindings).
+- `ReferencePass`: Identifies which tokens refer to existing variables (references) and resolves them to their bindings.
 
-## `VariableRules` Trait
+This separation allows for complex scoping rules (like block scoping, shadowing, and hoisting) to be implemented cleanly.
 
-The `VariableRules` trait allows the language to define how to classify identifiers based on local context.
+## `BindingPass` Trait
 
 ```rust
 # use std::fmt::Debug;
-# use mcparse::{Token, atom::VariableRole};
-pub trait VariableRules: Debug {
-    fn classify(&self, prev: Option<&Token>, curr: &Token) -> VariableRole;
+# use mcparse::{token::TokenTree, scoping::ScopeStack};
+pub trait BindingPass: Debug + Send + Sync {
+    fn identify_bindings(&self, tokens: &mut [TokenTree], scope: &mut ScopeStack);
 }
 ```
 
-- `prev`: The token immediately preceding the current identifier.
-- `curr`: The current identifier token.
+The `BindingPass` traverses the `TokenTree` and marks tokens as bindings by setting their `binding` field. It also pushes and pops scopes on the `ScopeStack`.
 
-This simple lookbehind is often enough to distinguish bindings from references in many languages (e.g., after `let`, `fn`, `class`).
+## `ReferencePass` Trait
+
+```rust
+# use std::fmt::Debug;
+# use mcparse::{token::TokenTree, scoping::ScopeStack};
+pub trait ReferencePass: Debug + Send + Sync {
+    fn resolve_references(&self, tokens: &mut [TokenTree], scope: &ScopeStack);
+}
+```
+
+The `ReferencePass` traverses the `TokenTree` and resolves references by looking them up in the `ScopeStack`. If a reference is found, it links the token to the corresponding binding.
+
+## Execution Order
+
+1.  **Lexing**: The raw text is converted into a `TokenTree`.
+2.  **Binding Pass**: The `BindingPass` runs, identifying declarations.
+3.  **Reference Pass**: The `ReferencePass` runs, resolving references.
+4.  **Macro Expansion**: Macros are expanded.
+5.  **Parsing**: The shape algebra matches against the fully scoped and expanded token tree.

@@ -47,6 +47,7 @@ mod macros;
 #[cfg(test)]
 pub mod mock;
 pub mod parser;
+pub mod scoping;
 pub mod shape;
 pub mod token;
 

@@ -2,6 +2,10 @@ use crate::atom::AtomKind;
 use crate::language::Delimiter;
 use miette::SourceSpan;
 
+/// A unique identifier for a variable binding.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct BindingId(pub usize);
+
 /// Represents a location in the source code.
 /// Wraps `miette::SourceSpan` to provide location tracking.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -33,6 +37,8 @@ pub struct Token {
     /// The index of the atom in the language definition that produced this token.
     /// Used for syntax highlighting.
     pub atom_index: Option<usize>,
+    /// The ID of the variable binding this token refers to or defines.
+    pub binding: Option<BindingId>,
 }
 
 impl Token {
@@ -42,6 +48,7 @@ impl Token {
             text: text.to_string(),
             location: SourceLocation::new(offset, text.len()),
             atom_index: None,
+            binding: None,
         }
     }
 }
